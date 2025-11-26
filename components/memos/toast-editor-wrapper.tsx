@@ -19,6 +19,7 @@ export function ToastEditor({ initialValue = '', onChange, height = '600px' }: T
     if (typeof window !== 'undefined') {
       Promise.all([
         import('@toast-ui/react-editor'),
+        // @ts-ignore - CSS import
         import('@toast-ui/editor/dist/toastui-editor.css')
       ]).then(([editorModule]) => {
         setEditorComponent(() => editorModule.Editor)

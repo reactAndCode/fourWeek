@@ -1,95 +1,98 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, StickyNote, TrendingUp } from "lucide-react"
+"use client"
+
+import { useState, useEffect } from "react"
+import { Calendar } from "@/components/home/calendar"
+import { WorklogForm } from "@/components/home/worklog-form"
+import { ReferenceTabs } from "@/components/home/reference-tabs"
+import { getWorklogByDate, upsertWorklog } from "@/lib/api/worklog"
+
+// 현재 사용자 ID
+const USER_ID = "904f05e3-43cd-446b-838e-3ef1d53a38ce"
 
 export default function HomePage() {
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [worklogContent, setWorklogContent] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // 날짜 변경 시 해당 날짜의 작업일지 로드
+  useEffect(() => {
+    loadWorklog(selectedDate)
+  }, [selectedDate])
+
+  const loadWorklog = async (date: Date) => {
+    setIsLoading(true)
+    try {
+      const worklog = await getWorklogByDate(USER_ID, date)
+      if (worklog) {
+        // tasks 배열에서 첫 번째 작업의 description을 가져옴
+        const tasks = worklog.tasks as any[]
+        setWorklogContent(tasks?.[0]?.description || "")
+      } else {
+        setWorklogContent("")
+      }
+    } catch (error) {
+      console.error('작업일지 로드 실패:', error)
+      setWorklogContent("")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSave = async (content: string) => {
+    setIsSaving(true)
+    try {
+      await upsertWorklog(USER_ID, selectedDate, content, 'completed')
+      setWorklogContent(content)
+      alert("작업일지가 저장되었습니다!")
+    } catch (error: any) {
+      console.error('저장 실패:', error)
+      alert(`저장에 실패했습니다.\n${error?.message || '알 수 없는 오류'}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    if (confirm("작성 중인 내용을 취소하시겠습니까?")) {
+      loadWorklog(selectedDate)
+    }
+  }
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date)
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">홈</h1>
-        <p className="text-gray-600 mt-2">이번 주 업무 현황을 한눈에 확인하고 관리하세요.</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* 상단: 달력 + 작업일지 */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 mb-6">
+          {/* 왼쪽: 달력 */}
+          <div>
+            <Calendar
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
+            />
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">총 근무 시간</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">38시간 30분</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              이번 주 누적
-            </p>
-          </CardContent>
-        </Card>
+          {/* 오른쪽: 작업일지 입력 */}
+          <div>
+            <WorklogForm
+              selectedDate={selectedDate}
+              initialContent={worklogContent}
+              isLoading={isLoading}
+              isSaving={isSaving}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">완료한 업무</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12개</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              이번 주 완료
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">진행률</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">75%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              목표 대비
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>주간일지</CardTitle>
-            <CardDescription>이번 주 작업 내역을 관리하세요</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                일일 작업 내역을 기록하고 주간 통계를 확인할 수 있습니다.
-              </p>
-              <a
-                href="/weeklog"
-                className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500"
-              >
-                주간일지 보기 →
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>메모관리</CardTitle>
-            <CardDescription>중요한 메모를 저장하고 관리하세요</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                업무 관련 메모를 작성하고 태그로 분류할 수 있습니다.
-              </p>
-              <a
-                href="/memos"
-                className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500"
-              >
-                메모관리 보기 →
-              </a>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 하단: 참고 정보 */}
+        <div>
+          <ReferenceTabs selectedDate={selectedDate} />
+        </div>
       </div>
     </div>
   )
