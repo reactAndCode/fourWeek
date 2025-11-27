@@ -1,135 +1,143 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { WeeklySummary } from "@/components/weeklog/weekly-summary"
 import { DayCard } from "@/components/weeklog/day-card"
 import { WeekNavigation } from "@/components/weeklog/week-navigation"
-import { Plus } from "lucide-react"
+import { Plus, Loader2 } from "lucide-react"
+import { getWeekWorklogs } from "@/lib/api/worklog"
+import { useAuth } from "@/hooks/useAuth"
 
-// Mock data - 나중에 Supabase에서 가져올 데이터
-const mockData = {
-  summary: {
-    totalMinutes: 2310, // 38시간 30분
-    completedTasks: 12,
-    progressRate: 75,
-  },
-  days: [
-    {
-      date: new Date(2023, 9, 23),
-      dayOfWeek: "월요일",
-      tasks: [
-        {
-          id: "1",
-          description: "UI 디자인 시스템 컴포넌트 개발",
-          minutes: 480,
-          tags: ["디자인", "기획"],
-          category: "design" as const,
-        },
-        {
-          id: "2",
-          description: "주간 회의 및 업무 계획 수립",
-          minutes: 60,
-          tags: ["기획"],
-          category: "planning" as const,
-        },
-        {
-          id: "3",
-          description: "사용자 피드백 분석 및 정리",
-          minutes: 120,
-          tags: ["분석"],
-          category: "analysis" as const,
-        },
-      ],
-      status: "completed" as const,
-    },
-    {
-      date: new Date(2023, 9, 24),
-      dayOfWeek: "화요일",
-      tasks: [
-        {
-          id: "4",
-          description: "A/B 테스트 결과 분석 보고서 작성",
-          minutes: 180,
-          tags: ["분석", "디자인"],
-          category: "analysis" as const,
-        },
-        {
-          id: "5",
-          description: "신규 기능 프로토타입 제작 (진행중)",
-          minutes: 210,
-          tags: ["디자인"],
-          category: "development" as const,
-        },
-      ],
-      status: "draft" as const,
-      isToday: true,
-    },
-    {
-      date: new Date(2023, 9, 25),
-      dayOfWeek: "수요일",
-      tasks: [
-        {
-          id: "6",
-          description: "API 연동 테스트 및 버그 수정",
-          minutes: 480,
-          tags: ["개발"],
-          category: "development" as const,
-        },
-        {
-          id: "7",
-          description: "기술 문서 조사 작성",
-          minutes: 60,
-          tags: ["개발"],
-          category: "development" as const,
-        },
-      ],
-      status: "completed" as const,
-    },
-    {
-      date: new Date(2023, 9, 26),
-      dayOfWeek: "목요일",
-      tasks: [],
-      status: "empty" as const,
-    },
-    {
-      date: new Date(2023, 9, 27),
-      dayOfWeek: "금요일",
-      tasks: [],
-      status: "empty" as const,
-    },
-    {
-      date: new Date(2023, 9, 28),
-      dayOfWeek: "토요일",
-      tasks: [],
-      status: "empty" as const,
-    },
-    {
-      date: new Date(2023, 9, 29),
-      dayOfWeek: "일요일",
-      tasks: [],
-      status: "empty" as const,
-    },
-  ],
+// 주의 시작일(월요일) 계산
+function getWeekStart(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1) // 일요일이면 -6, 아니면 월요일로
+  return new Date(d.setDate(diff))
+}
+
+// 주차 문자열 생성 (예: "2025년 1월 2주차")
+function getWeekString(weekStart: Date): string {
+  const year = weekStart.getFullYear()
+  const month = weekStart.getMonth() + 1
+
+  // 해당 월의 첫 번째 월요일 찾기
+  const firstDayOfMonth = new Date(year, weekStart.getMonth(), 1)
+  const firstMonday = getWeekStart(firstDayOfMonth)
+
+  // 주차 계산
+  const diffDays = Math.floor((weekStart.getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24))
+  const weekNumber = Math.floor(diffDays / 7) + 1
+
+  return `${year}년 ${month}월 ${weekNumber}주차`
+}
+
+// 요일 이름 가져오기
+function getDayOfWeekName(date: Date): string {
+  const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+  return days[date.getDay()]
 }
 
 export default function WeeklogPage() {
-  const [currentWeek, setCurrentWeek] = useState("2023년 10월 4주차")
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+  const [weekStart, setWeekStart] = useState<Date>(getWeekStart(new Date()))
+  const [worklogs, setWorklogs] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // 인증 확인
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/auth/login")
+    }
+  }, [user, authLoading, router])
+
+  // 주간 작업일지 로드
+  useEffect(() => {
+    if (user) {
+      loadWeekWorklogs()
+    }
+  }, [weekStart, user])
+
+  const loadWeekWorklogs = async () => {
+    if (!user) return
+
+    setIsLoading(true)
+    try {
+      const data = await getWeekWorklogs(user.id, weekStart)
+      setWorklogs(data)
+    } catch (error) {
+      console.error('주간 작업일지 로드 실패:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 로딩 중이거나 사용자가 없으면 로딩 표시
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500">로딩 중...</div>
+      </div>
+    )
+  }
 
   const handlePrevWeek = () => {
-    // TODO: 이전 주로 이동
-    console.log("Previous week")
+    const newWeekStart = new Date(weekStart)
+    newWeekStart.setDate(newWeekStart.getDate() - 7)
+    setWeekStart(newWeekStart)
   }
 
   const handleNextWeek = () => {
-    // TODO: 다음 주로 이동
-    console.log("Next week")
+    const newWeekStart = new Date(weekStart)
+    newWeekStart.setDate(newWeekStart.getDate() + 7)
+    setWeekStart(newWeekStart)
   }
 
   const handleToday = () => {
-    // TODO: 오늘이 속한 주로 이동
-    console.log("Today")
+    setWeekStart(getWeekStart(new Date()))
   }
+
+  // 요약 통계 계산
+  const calculateSummary = () => {
+    const totalMinutes = worklogs.reduce((sum, log) => sum + (log.total_minutes || 0), 0)
+    const completedTasks = worklogs.reduce((sum, log) => sum + (log.tasks?.length || 0), 0)
+    const completedDays = worklogs.filter(log => log.status === 'completed').length
+    const progressRate = Math.round((completedDays / 7) * 100)
+
+    return { totalMinutes, completedTasks, progressRate }
+  }
+
+  // 7일간의 날짜 배열 생성 및 워크로그 매핑
+  const getDaysData = () => {
+    const days = []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart)
+      date.setDate(date.getDate() + i)
+      const dateString = date.toISOString().split('T')[0]
+
+      // 해당 날짜의 worklog 찾기
+      const worklog = worklogs.find(w => w.work_date === dateString)
+
+      days.push({
+        date,
+        dayOfWeek: getDayOfWeekName(date),
+        tasks: worklog?.tasks || [],
+        status: worklog?.status || 'empty',
+        isToday: date.getTime() === today.getTime()
+      })
+    }
+
+    return days
+  }
+
+  const summary = calculateSummary()
+  const daysData = getDaysData()
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -144,31 +152,39 @@ export default function WeeklogPage() {
         </Button>
       </div>
 
-      <WeeklySummary
-        totalMinutes={mockData.summary.totalMinutes}
-        completedTasks={mockData.summary.completedTasks}
-        progressRate={mockData.summary.progressRate}
-      />
-
-      <WeekNavigation
-        currentWeek={currentWeek}
-        onPrevWeek={handlePrevWeek}
-        onNextWeek={handleNextWeek}
-        onToday={handleToday}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {mockData.days.map((day, index) => (
-          <DayCard
-            key={index}
-            date={day.date}
-            dayOfWeek={day.dayOfWeek}
-            tasks={day.tasks}
-            status={day.status}
-            isToday={day.isToday}
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      ) : (
+        <>
+          <WeeklySummary
+            totalMinutes={summary.totalMinutes}
+            completedTasks={summary.completedTasks}
+            progressRate={summary.progressRate}
           />
-        ))}
-      </div>
+
+          <WeekNavigation
+            currentWeek={getWeekString(weekStart)}
+            onPrevWeek={handlePrevWeek}
+            onNextWeek={handleNextWeek}
+            onToday={handleToday}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {daysData.map((day, index) => (
+              <DayCard
+                key={index}
+                date={day.date}
+                dayOfWeek={day.dayOfWeek}
+                tasks={day.tasks}
+                status={day.status}
+                isToday={day.isToday}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

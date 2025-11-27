@@ -1,9 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, FileText, StickyNote, Bell, User } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Home, FileText, StickyNote, Bell, User, LogOut, LogIn } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/hooks/useAuth"
+import { signOut } from "@/lib/api/auth"
+import { Button } from "@/components/ui/button"
 
 const navItems = [
   {
@@ -25,6 +28,25 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { user, loading } = useAuth()
+
+  const handleLogout = async () => {
+    if (confirm("로그아웃 하시겠습니까?")) {
+      try {
+        await signOut()
+        router.push("/auth/login")
+      } catch (error) {
+        console.error("로그아웃 실패:", error)
+        alert("로그아웃에 실패했습니다.")
+      }
+    }
+  }
+
+  // 로그인 페이지에서는 네비게이션 숨김
+  if (pathname === "/auth/login") {
+    return null
+  }
 
   return (
     <nav className="border-b bg-white">
@@ -60,12 +82,45 @@ export function Navigation() {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="p-2 rounded-lg hover:bg-gray-100">
-              <Bell className="h-5 w-5 text-gray-600" />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-gray-100">
-              <User className="h-5 w-5 text-gray-600" />
-            </button>
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    {/* 사용자 이메일 표시 */}
+                    <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg">
+                      <User className="h-4 w-4 text-gray-600" />
+                      <span className="text-sm text-gray-700">
+                        {user.email?.split("@")[0]}
+                      </span>
+                    </div>
+
+                    {/* 로그아웃 버튼 */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      로그아웃
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {/* 로그인 버튼 */}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => router.push("/auth/login")}
+                      className="gap-2"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      로그인
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

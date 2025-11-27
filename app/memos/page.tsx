@@ -1,18 +1,19 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { MemoTabs } from "@/components/memos/memo-tabs"
 import { ToastEditor } from "@/components/memos/toast-editor-wrapper"
 import { Save, X, Loader2 } from "lucide-react"
 import { getMemoByTab, upsertMemo } from "@/lib/api/memos"
-
-// 현재 사용자 ID
-const TEMP_USER_ID = "904f05e3-43cd-446b-838e-3ef1d53a38ce"
+import { useAuth } from "@/hooks/useAuth"
 
 const TABS = Array.from({ length: 10 }, (_, i) => `Tab ${i + 1}`)
 
 export default function MemosPage() {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [activeTab, setActiveTab] = useState(TABS[0])
   const [title, setTitle] = useState("제목 없음")
   const [content, setContent] = useState("")
@@ -21,15 +22,26 @@ export default function MemosPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
+  // 인증 확인
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/auth/login")
+    }
+  }, [user, authLoading, router])
+
   // 탭 변경 시 메모 로드
   useEffect(() => {
-    loadMemo(activeTab)
-  }, [activeTab])
+    if (user) {
+      loadMemo(activeTab)
+    }
+  }, [activeTab, user])
 
   const loadMemo = async (tabName: string) => {
+    if (!user) return
+
     setIsLoading(true)
     try {
-      const memo = await getMemoByTab(TEMP_USER_ID, tabName)
+      const memo = await getMemoByTab(user.id, tabName)
       if (memo) {
         setTitle(memo.title)
         setContent(memo.content)
@@ -57,9 +69,11 @@ export default function MemosPage() {
   }
 
   const handleSave = async () => {
+    if (!user) return
+
     setIsSaving(true)
     try {
-      const result = await upsertMemo(TEMP_USER_ID, activeTab, title, content)
+      const result = await upsertMemo(user.id, activeTab, title, content)
       console.log('저장 성공:', result)
       setOriginalContent(content)
       setHasUnsavedChanges(prev => ({ ...prev, [activeTab]: false }))
@@ -85,6 +99,15 @@ export default function MemosPage() {
         setHasUnsavedChanges(prev => ({ ...prev, [activeTab]: false }))
       }
     }
+  }
+
+  // 로딩 중이거나 사용자가 없으면 로딩 표시
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500">로딩 중...</div>
+      </div>
+    )
   }
 
   return (
