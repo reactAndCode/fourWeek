@@ -1,15 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Calendar } from "@/components/home/calendar"
 import { WorklogForm } from "@/components/home/worklog-form"
 import { ReferenceTabs } from "@/components/home/reference-tabs"
 import { getWorklogByDate, upsertWorklog } from "@/lib/api/worklog"
-
-// 현재 사용자 ID
-const USER_ID = "904f05e3-43cd-446b-838e-3ef1d53a38ce"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function HomePage() {
+  const router = useRouter()
+  const { user, loading } = useAuth()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [worklogContent, setWorklogContent] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -17,13 +18,33 @@ export default function HomePage() {
 
   // 날짜 변경 시 해당 날짜의 작업일지 로드
   useEffect(() => {
-    loadWorklog(selectedDate)
-  }, [selectedDate])
+    if (user) {
+      loadWorklog(selectedDate)
+    }
+  }, [selectedDate, user])
+
+  // 인증 확인
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/auth/login")
+    }
+  }, [user, loading, router])
+
+  // 로딩 중이거나 사용자가 없으면 로딩 표시
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500">로딩 중...</div>
+      </div>
+    )
+  }
 
   const loadWorklog = async (date: Date) => {
+    if (!user) return
+
     setIsLoading(true)
     try {
-      const worklog = await getWorklogByDate(USER_ID, date)
+      const worklog = await getWorklogByDate(user.id, date)
       if (worklog) {
         // tasks 배열에서 첫 번째 작업의 description을 가져옴
         const tasks = worklog.tasks as any[]
@@ -40,9 +61,11 @@ export default function HomePage() {
   }
 
   const handleSave = async (content: string) => {
+    if (!user) return
+
     setIsSaving(true)
     try {
-      await upsertWorklog(USER_ID, selectedDate, content, 'completed')
+      await upsertWorklog(user.id, selectedDate, content, 'completed')
       setWorklogContent(content)
       alert("작업일지가 저장되었습니다!")
     } catch (error: any) {

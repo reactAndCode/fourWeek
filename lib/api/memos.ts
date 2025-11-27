@@ -56,22 +56,59 @@ export async function createMemo(memo: MemoInsert) {
  * 메모 수정 (upsert)
  */
 export async function upsertMemo(userId: string, tabName: string, title: string, content: string, tags?: string[]) {
-  const { data, error } = await supabase
-    .from('my_memo')
-    .upsert({
-      user_id: userId,
-      tab_name: tabName,
-      title,
-      content,
-      tags: tags || [],
-    }, {
-      onConflict: 'user_id,tab_name',
-    })
-    .select()
-    .single()
+  console.log('upsertMemo 호출:', { userId, tabName, title: title.substring(0, 20), contentLength: content.length })
 
-  if (error) throw error
-  return data
+  // 1. 기존 메모 확인
+  const { data: existing } = await supabase
+    .from('my_memo')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('tab_name', tabName)
+    .maybeSingle()
+
+  console.log('기존 메모:', existing)
+
+  if (existing) {
+    // 2-1. 기존 메모 업데이트
+    const { data, error } = await supabase
+      .from('my_memo')
+      .update({
+        title,
+        content,
+        tags: tags || [],
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existing.id)
+      .select()
+      .single()
+
+    console.log('업데이트 결과:', { data, error })
+    if (error) {
+      console.error('업데이트 에러 상세:', JSON.stringify(error, null, 2))
+      throw error
+    }
+    return data
+  } else {
+    // 2-2. 새 메모 생성
+    const { data, error } = await supabase
+      .from('my_memo')
+      .insert({
+        user_id: userId,
+        tab_name: tabName,
+        title,
+        content,
+        tags: tags || [],
+      })
+      .select()
+      .single()
+
+    console.log('삽입 결과:', { data, error })
+    if (error) {
+      console.error('삽입 에러 상세:', JSON.stringify(error, null, 2))
+      throw error
+    }
+    return data
+  }
 }
 
 /**
