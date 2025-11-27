@@ -90,9 +90,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 상단: 달력 + 작업일지 */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 mb-6 items-stretch">
           {/* 왼쪽: 달력 */}
-          <div>
+          <div className="h-full">
             <Calendar
               selectedDate={selectedDate}
               onDateSelect={handleDateSelect}
@@ -100,7 +100,7 @@ export default function HomePage() {
           </div>
 
           {/* 오른쪽: 작업일지 입력 */}
-          <div>
+          <div className="h-full">
             <WorklogForm
               selectedDate={selectedDate}
               initialContent={worklogContent}

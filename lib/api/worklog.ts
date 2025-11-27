@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/db/supabase'
 import { Database } from '@/types/database.types'
+import { formatLocalDate } from '@/lib/utils'
 
 type Worklog = Database['public']['Tables']['my_weeklog']['Row']
 type WorklogInsert = Database['public']['Tables']['my_weeklog']['Insert']
@@ -9,7 +10,7 @@ type WorklogUpdate = Database['public']['Tables']['my_weeklog']['Update']
  * 특정 날짜의 작업일지 조회 (tasks 포함)
  */
 export async function getWorklogByDate(userId: string, date: Date) {
-  const dateString = date.toISOString().split('T')[0] // YYYY-MM-DD 형식
+  const dateString = formatLocalDate(date) // YYYY-MM-DD 형식 (로컬 시간대)
 
   // 1. 작업일지 조회
   const { data: worklog, error: worklogError } = await supabase
@@ -55,7 +56,7 @@ export async function upsertWorklog(
   content: string,
   status: 'draft' | 'completed' | 'empty' = 'completed'
 ) {
-  const dateString = date.toISOString().split('T')[0]
+  const dateString = formatLocalDate(date)
 
   // 1. 기존 작업일지 조회
   const { data: existingWorklog } = await supabase
@@ -144,8 +145,8 @@ export async function getWeekWorklogs(userId: string, startDate: Date) {
   const endDate = new Date(startDate)
   endDate.setDate(endDate.getDate() + 6)
 
-  const startDateString = startDate.toISOString().split('T')[0]
-  const endDateString = endDate.toISOString().split('T')[0]
+  const startDateString = formatLocalDate(startDate)
+  const endDateString = formatLocalDate(endDate)
 
   // 1. 작업일지 목록 조회
   const { data: worklogs, error: worklogsError } = await supabase
@@ -192,7 +193,7 @@ export async function saveReferenceInfo(
   tabName: string,
   content: string
 ) {
-  const dateString = date.toISOString().split('T')[0]
+  const dateString = formatLocalDate(date)
   const fullTabName = `${dateString}-${tabName}`
 
   console.log('참고 정보 저장 시작:', { userId, dateString, tabName, fullTabName, contentLength: content.length })
@@ -254,7 +255,7 @@ export async function saveReferenceInfo(
  * 참고 정보 조회 - 날짜별 메모 구분
  */
 export async function getReferenceInfo(userId: string, date: Date, tabName: string) {
-  const dateString = date.toISOString().split('T')[0]
+  const dateString = formatLocalDate(date)
   const fullTabName = `${dateString}-${tabName}`
 
   console.log('참고 정보 조회 시작:', { userId, dateString, tabName, fullTabName })

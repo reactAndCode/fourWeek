@@ -97,7 +97,7 @@ export function Calendar({ selectedDate, onDateSelect }: CalendarProps) {
   const weekDays = ["S", "M", "T", "W", "T", "F", "S"]
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="bg-white rounded-xl shadow-sm p-6 h-full flex flex-col">
       {/* 월 네비게이션 */}
       <div className="flex items-center justify-between mb-6">
         <button

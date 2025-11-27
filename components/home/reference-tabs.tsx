@@ -81,16 +81,44 @@ export function ReferenceTabs({ selectedDate }: ReferenceTabsProps) {
 
   return (
     <div className="bg-white rounded-xl shadow-sm">
-      {/* 섹션 제목 및 상태 */}
+      {/* 섹션 제목 + 저장 상태 + 버튼들 */}
       <div className="px-8 pt-8 pb-4 flex items-center justify-between">
         <h2 className="text-xl font-bold">참고 정보</h2>
 
-        {/* 저장 상태 표시 */}
-        <div className="flex items-center gap-2">
+        {/* 우측: 저장 상태 + 버튼들 */}
+        <div className="flex items-center gap-3">
+          {/* 저장 상태 */}
           <CheckCircle2 className={`h-5 w-5 ${!hasChanges && !isSaving ? 'text-green-600' : 'text-gray-400'}`} />
           <span className={`text-sm ${!hasChanges && !isSaving ? 'text-green-600' : 'text-gray-500'}`}>
             {isSaving ? '저장 중...' : !hasChanges ? '저장 완료' : '저장되지 않음'}
           </span>
+
+          {/* 버튼들 */}
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            className="px-6"
+            disabled={!hasChanges || isSaving}
+          >
+            취소
+          </Button>
+          <Button
+            onClick={handleSave}
+            className="px-6 bg-blue-500 hover:bg-blue-600"
+            disabled={!hasChanges || isSaving}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                저장 중...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                저장하기
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -125,43 +153,13 @@ export function ReferenceTabs({ selectedDate }: ReferenceTabsProps) {
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
         ) : (
-          <>
-            <textarea
-              value={content[activeTab] || ""}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder={`${activeTab}에 대한 참고 정보를 입력하세요...`}
-              className="w-full h-64 p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={isSaving}
-            />
-
-            {/* 버튼 영역 */}
-            <div className="flex justify-end gap-3 mt-4">
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                disabled={!hasChanges || isSaving}
-              >
-                취소
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges || isSaving}
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    저장 중...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    저장하기
-                  </>
-                )}
-              </Button>
-            </div>
-          </>
+          <textarea
+            value={content[activeTab] || ""}
+            onChange={(e) => handleContentChange(e.target.value)}
+            placeholder={`${activeTab}에 대한 참고 정보를 입력하세요...`}
+            className="w-full h-64 p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={isSaving}
+          />
         )}
       </div>
     </div>
