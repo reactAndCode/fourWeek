@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Calendar } from "@/components/home/calendar"
 import { WorklogForm } from "@/components/home/worklog-form"
 import { ReferenceTabs } from "@/components/home/reference-tabs"
+import { BaseMemo } from "@/components/home/base-memo"
 import { getWorklogByDate, upsertWorklog } from "@/lib/api/worklog"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -112,9 +113,17 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 하단: 참고 정보 */}
-        <div>
-          <ReferenceTabs selectedDate={selectedDate} />
+        {/* 하단: 참고 정보 + 기준 메모 */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-stretch min-h-[450px]">
+          {/* 왼쪽: 참고 정보 (70%) */}
+          <div className="h-full">
+            <ReferenceTabs selectedDate={selectedDate} />
+          </div>
+
+          {/* 오른쪽: 기준 메모 (30%) */}
+          <div className="h-full">
+            <BaseMemo />
+          </div>
         </div>
       </div>
     </div>

@@ -80,7 +80,7 @@ export function ReferenceTabs({ selectedDate }: ReferenceTabsProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
+    <div className="bg-white rounded-xl shadow-sm h-full flex flex-col">
       {/* 섹션 제목 + 저장 상태 + 버튼들 */}
       <div className="px-8 pt-8 pb-4 flex items-center justify-between">
         <h2 className="text-xl font-bold">참고 정보</h2>
@@ -147,9 +147,9 @@ export function ReferenceTabs({ selectedDate }: ReferenceTabsProps) {
       </div>
 
       {/* 컨텐츠 영역 */}
-      <div className="p-8">
+      <div className="flex-1 p-8 overflow-hidden">
         {isLoading ? (
-          <div className="w-full h-64 flex items-center justify-center border border-gray-300 rounded-lg">
+          <div className="w-full h-full flex items-center justify-center border border-gray-300 rounded-lg">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
         ) : (
@@ -157,7 +157,7 @@ export function ReferenceTabs({ selectedDate }: ReferenceTabsProps) {
             value={content[activeTab] || ""}
             onChange={(e) => handleContentChange(e.target.value)}
             placeholder={`${activeTab}에 대한 참고 정보를 입력하세요...`}
-            className="w-full h-64 p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full h-full p-4 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isSaving}
           />
         )}

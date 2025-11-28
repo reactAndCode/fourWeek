@@ -16,7 +16,11 @@
       "Bash(npm run build:*)",
       "Bash(git pull:*)",
       "Bash(git config:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(del /F /Q .nextdevlock)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

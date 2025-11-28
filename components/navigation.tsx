@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, FileText, StickyNote, Bell, User, LogOut, LogIn } from "lucide-react"
+import { Home, FileText, StickyNote, Wrench, Bell, User, LogOut, LogIn } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
 import { signOut } from "@/lib/api/auth"
@@ -23,6 +23,11 @@ const navItems = [
     name: "메모관리",
     href: "/memos",
     icon: StickyNote,
+  },
+  {
+    name: "나의유틸",
+    href: "/myutils",
+    icon: Wrench,
   },
 ]
 

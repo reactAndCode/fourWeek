@@ -102,7 +102,7 @@ export function WorklogForm({
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
             placeholder="오늘 수행한 주요 업무, 진행 상황, 특이사항 등을 기록하세요."
-            className="w-full h-full p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full h-full p-4 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isSaving}
           />
         )}

@@ -94,7 +94,7 @@ export function Calendar({ selectedDate, onDateSelect }: CalendarProps) {
     )
   }
 
-  const weekDays = ["S", "M", "T", "W", "T", "F", "S"]
+  const weekDays = ["일", "월", "화", "수", "목", "금", "토"]
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 h-full flex flex-col">
@@ -116,7 +116,7 @@ export function Calendar({ selectedDate, onDateSelect }: CalendarProps) {
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
-
+ 
       {/* 요일 헤더 */}
       <div className="grid grid-cols-7 gap-2 mb-2">
         {weekDays.map((day, i) => (
