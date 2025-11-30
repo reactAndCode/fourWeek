@@ -1,6 +1,6 @@
 "use client"
 
-import { Languages, FlaskConical } from "lucide-react"
+import { Languages, FlaskConical, Network, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type MenuItem = "translator" | "testA" | "testB" | "testC"
@@ -18,13 +18,13 @@ const menuItems = [
   },
   {
     id: "testA" as MenuItem,
-    label: "테스트 A",
-    icon: FlaskConical,
+    label: "리액트플로우",
+    icon: Network,
   },
   {
     id: "testB" as MenuItem,
-    label: "테스트 B",
-    icon: FlaskConical,
+    label: "문서요약",
+    icon: FileText,
   },
   {
     id: "testC" as MenuItem,
