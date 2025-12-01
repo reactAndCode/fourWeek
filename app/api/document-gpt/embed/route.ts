@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { OpenAIEmbeddings } from "@langchain/openai"
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters"
-import { FaissStore } from "@langchain/community/vectorstores/faiss"
+import { MemoryVectorStore } from "@langchain/community/vectorstores/memory"
 import { randomUUID } from "crypto"
 import path from "path"
 import fs from "fs/promises"
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     // 문서 ID 생성
     const documentId = randomUUID()
 
-    console.log("📄 [FAISS 임베딩] 문서 처리 시작:", {
+    console.log("📄 [벡터 임베딩] 문서 처리 시작:", {
       documentId,
       원본_길이: text.length,
     })
@@ -54,27 +54,33 @@ export async function POST(request: NextRequest) {
       modelName: "text-embedding-3-small", // 비용 효율적인 모델
     })
 
-    // 3. FAISS 벡터 스토어 생성
-    const vectorStore = await FaissStore.fromDocuments(docs, embeddings)
+    // 3. 메모리 벡터 스토어 생성
+    const vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings)
 
     console.log("🔢 [임베딩 생성] 완료:", {
       벡터_차원: 1536, // text-embedding-3-small의 차원
       총_벡터_수: docs.length,
     })
 
-    // 4. FAISS 인덱스를 파일 시스템에 저장
+    // 4. 벡터 스토어를 JSON으로 직렬화하여 파일 시스템에 저장
     const tempDir = os.tmpdir()
-    const faissDir = path.join(tempDir, "faiss-indexes")
+    const vectorDir = path.join(tempDir, "vector-stores")
 
     // 디렉토리가 없으면 생성
     try {
-      await fs.mkdir(faissDir, { recursive: true })
+      await fs.mkdir(vectorDir, { recursive: true })
     } catch (error) {
       console.error("디렉토리 생성 실패:", error)
     }
 
-    const indexPath = path.join(faissDir, documentId)
-    await vectorStore.save(indexPath)
+    const indexPath = path.join(vectorDir, `${documentId}.json`)
+
+    // 벡터 스토어 데이터를 JSON으로 저장
+    const vectorStoreData = {
+      memoryVectors: vectorStore.memoryVectors,
+      _vectorstoreType: "memory"
+    }
+    await fs.writeFile(indexPath, JSON.stringify(vectorStoreData), "utf-8")
 
     console.log("💾 [인덱스 저장] 완료:", {
       저장_경로: indexPath,

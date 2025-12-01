@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { OpenAIEmbeddings } from "@langchain/openai"
-import { FaissStore } from "@langchain/community/vectorstores/faiss"
+import { MemoryVectorStore } from "@langchain/community/vectorstores/memory"
 import OpenAI from "openai"
 import path from "path"
 import os from "os"
+import fs from "fs/promises"
 
 interface ChatMessage {
   role: "user" | "assistant"
@@ -37,15 +38,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("🔍 [FAISS 쿼리] 검색 시작:", {
+    console.log("🔍 [벡터 쿼리] 검색 시작:", {
       documentId,
       질문_길이: question.length,
     })
 
-    // 1. FAISS 인덱스 로드
+    // 1. 벡터 스토어 로드
     const tempDir = os.tmpdir()
-    const faissDir = path.join(tempDir, "faiss-indexes")
-    const indexPath = path.join(faissDir, documentId)
+    const vectorDir = path.join(tempDir, "vector-stores")
+    const indexPath = path.join(vectorDir, `${documentId}.json`)
 
     const embeddings = new OpenAIEmbeddings({
       openAIApiKey: apiKey,
@@ -54,8 +55,15 @@ export async function POST(request: NextRequest) {
 
     let vectorStore
     try {
-      vectorStore = await FaissStore.load(indexPath, embeddings)
-      console.log("✅ [인덱스 로드] 성공:", { indexPath })
+      // JSON 파일에서 벡터 스토어 데이터 로드
+      const fileContent = await fs.readFile(indexPath, "utf-8")
+      const vectorStoreData = JSON.parse(fileContent)
+
+      // MemoryVectorStore 재구성
+      vectorStore = new MemoryVectorStore(embeddings)
+      vectorStore.memoryVectors = vectorStoreData.memoryVectors
+
+      console.log("✅ [인덱스 로드] 성공:", { indexPath, 벡터_수: vectorStoreData.memoryVectors.length })
     } catch (error) {
       console.error("❌ [인덱스 로드] 실패:", error)
       return NextResponse.json(

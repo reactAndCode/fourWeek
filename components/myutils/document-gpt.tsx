@@ -16,7 +16,7 @@ interface DocumentSummary {
   wordCount: number
 }
 
-type ModelMode = "chat" | "faiss"
+type ModelMode = "chat" | "vector"
 
 export function DocumentGPT() {
   const [file, setFile] = useState<File | null>(null)
@@ -87,8 +87,8 @@ export function DocumentGPT() {
       console.log("Upload response:", data)
       setDocumentText(data.text)
 
-      // FAISS 모드인 경우 임베딩 생성
-      if (modelMode === "faiss") {
+      // Vector 모드인 경우 임베딩 생성
+      if (modelMode === "vector") {
         const embedResponse = await fetch("/api/document-gpt/embed", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -159,8 +159,8 @@ export function DocumentGPT() {
       return
     }
 
-    if (modelMode === "faiss" && !documentId) {
-      alert("FAISS 임베딩이 준비되지 않았습니다.")
+    if (modelMode === "vector" && !documentId) {
+      alert("벡터 임베딩이 준비되지 않았습니다.")
       return
     }
 
@@ -177,8 +177,8 @@ export function DocumentGPT() {
     try {
       let response
 
-      if (modelMode === "faiss") {
-        // FAISS 모드: 임베딩 기반 검색
+      if (modelMode === "vector") {
+        // Vector 모드: 임베딩 기반 검색
         response = await fetch("/api/document-gpt/query", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -275,15 +275,15 @@ export function DocumentGPT() {
             Chat (기본)
           </button>
           <button
-            onClick={() => setModelMode("faiss")}
+            onClick={() => setModelMode("vector")}
             disabled={!!documentText}
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              modelMode === "faiss"
+              modelMode === "vector"
                 ? "bg-blue-600 text-white shadow-md"
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
             } ${documentText ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
           >
-            FAISS 임베딩
+            벡터 임베딩
           </button>
         </div>
         <span className="text-sm text-gray-500">

@@ -104,7 +104,7 @@ export function Translator() {
           value={koreanText}
           onChange={(e) => setKoreanText(e.target.value)}
           placeholder="한글 텍스트를 입력하세요..."
-          className="w-full h-28 p-4 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full h-18 p-4 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
@@ -189,7 +189,7 @@ export function Translator() {
           value={englishText}
           onChange={(e) => setEnglishText(e.target.value)}
           placeholder="Enter English text..."
-          className="w-full h-28 p-4 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full h-18 p-4 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
