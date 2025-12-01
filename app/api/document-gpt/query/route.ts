@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { OpenAIEmbeddings } from "@langchain/openai"
-import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory"
 import OpenAI from "openai"
-import path from "path"
-import os from "os"
-import fs from "fs/promises"
+import { createClient } from "@supabase/supabase-js"
 
 interface ChatMessage {
   role: "user" | "assistant"
@@ -30,66 +26,90 @@ export async function POST(request: NextRequest) {
     }
 
     // OpenAI API 키 확인
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
+    const openaiKey = process.env.OPENAI_API_KEY
+    if (!openaiKey) {
       return NextResponse.json(
         { error: "OpenAI API 키가 설정되지 않았습니다." },
         { status: 500 }
       )
     }
 
+    // Supabase 클라이언트 설정
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json(
+        { error: "Supabase 환경 변수가 설정되지 않았습니다." },
+        { status: 500 }
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    const openai = new OpenAI({ apiKey: openaiKey })
+
     console.log("🔍 [벡터 쿼리] 검색 시작:", {
       documentId,
       질문_길이: question.length,
     })
 
-    // 1. 벡터 스토어 로드
-    const tempDir = os.tmpdir()
-    const vectorDir = path.join(tempDir, "vector-stores")
-    const indexPath = path.join(vectorDir, `${documentId}.json`)
-
-    const embeddings = new OpenAIEmbeddings({
-      openAIApiKey: apiKey,
-      modelName: "text-embedding-3-small",
+    // 1. 질문을 임베딩으로 변환
+    const embeddingResponse = await openai.embeddings.create({
+      model: "text-embedding-ada-002",
+      input: question,
     })
 
-    let vectorStore
-    try {
-      // JSON 파일에서 벡터 스토어 데이터 로드
-      const fileContent = await fs.readFile(indexPath, "utf-8")
-      const vectorStoreData = JSON.parse(fileContent)
+    const queryEmbedding = embeddingResponse.data[0].embedding
+    const queryTokens = embeddingResponse.usage.total_tokens
 
-      // MemoryVectorStore 재구성
-      vectorStore = new MemoryVectorStore(embeddings)
-      vectorStore.memoryVectors = vectorStoreData.memoryVectors
+    console.log("🔢 [질문 임베딩] 완료:", {
+      임베딩_차원: queryEmbedding.length,
+      사용_토큰: queryTokens,
+    })
 
-      console.log("✅ [인덱스 로드] 성공:", { indexPath, 벡터_수: vectorStoreData.memoryVectors.length })
-    } catch (error) {
-      console.error("❌ [인덱스 로드] 실패:", error)
+    // 2. Supabase에서 유사한 청크 검색 (RPC 함수 호출)
+    const { data: similarChunks, error: searchError } = await supabase.rpc(
+      "match_document_chunks",
+      {
+        query_embedding: queryEmbedding,
+        filter_document_id: documentId,
+        match_threshold: 0.7, // 유사도 임계값 (0.7 이상만)
+        match_count: 4, // 상위 4개 청크
+      }
+    )
+
+    if (searchError) {
+      console.error("❌ [유사도 검색] 실패:", searchError)
       return NextResponse.json(
-        { error: "문서 인덱스를 찾을 수 없습니다. 문서를 다시 업로드해주세요." },
-        { status: 404 }
+        { error: `유사도 검색에 실패했습니다: ${searchError.message}` },
+        { status: 500 }
       )
     }
 
-    // 2. 질문과 유사한 청크 검색 (상위 4개)
-    const similarDocs = await vectorStore.similaritySearch(question, 4)
+    if (!similarChunks || similarChunks.length === 0) {
+      console.warn("⚠️ [유사도 검색] 관련 청크를 찾지 못했습니다.")
+      return NextResponse.json({
+        answer: "질문과 관련된 내용을 문서에서 찾지 못했습니다. 다른 방식으로 질문해보세요.",
+        retrievedChunks: 0,
+      })
+    }
 
     console.log("📊 [유사도 검색] 완료:", {
-      검색된_청크_수: similarDocs.length,
-      청크_길이들: similarDocs.map((doc) => doc.pageContent.length),
+      검색된_청크_수: similarChunks.length,
+      유사도_점수: similarChunks.map((c: any) => c.similarity.toFixed(4)),
     })
 
     // 3. 검색된 청크를 컨텍스트로 결합
-    const context = similarDocs.map((doc, idx) => `[청크 ${idx + 1}]\n${doc.pageContent}`).join("\n\n")
+    const context = similarChunks
+      .map((chunk: any, idx: number) => {
+        return `[청크 ${idx + 1}] (유사도: ${(chunk.similarity * 100).toFixed(1)}%)\n${chunk.content}`
+      })
+      .join("\n\n")
 
     console.log("📝 [컨텍스트 구성] 완료:", {
       총_컨텍스트_길이: context.length,
     })
 
     // 4. OpenAI로 답변 생성
-    const openai = new OpenAI({ apiKey })
-
     const messages: any[] = [
       {
         role: "system",
@@ -132,33 +152,37 @@ ${context}
     const answer = completion.choices[0]?.message?.content || "답변을 생성할 수 없습니다."
 
     // 사용량 로깅
-    console.log("📊 [FAISS Q&A] 토큰 사용량:", {
-      입력_토큰: completion.usage?.prompt_tokens || 0,
-      출력_토큰: completion.usage?.completion_tokens || 0,
-      총_토큰: completion.usage?.total_tokens || 0,
+    console.log("📊 [벡터 Q&A] 토큰 사용량:", {
+      질문_임베딩_토큰: queryTokens,
+      답변_입력_토큰: completion.usage?.prompt_tokens || 0,
+      답변_출력_토큰: completion.usage?.completion_tokens || 0,
+      답변_총_토큰: completion.usage?.total_tokens || 0,
       컨텍스트_길이: context.length,
       질문_길이: question.length,
       대화_기록: chatHistory?.length || 0,
       모델: "gpt-3.5-turbo",
     })
 
-    const estimatedCost =
-      ((completion.usage?.prompt_tokens || 0) * 0.5) / 1000000 +
-      ((completion.usage?.completion_tokens || 0) * 1.5) / 1000000
+    // 비용 계산
+    const queryEmbeddingCost = (queryTokens * 0.10) / 1000000 // 질문 임베딩 비용
+    const chatCost =
+      ((completion.usage?.prompt_tokens || 0) * 0.50) / 1000000 +
+      ((completion.usage?.completion_tokens || 0) * 1.50) / 1000000
 
-    console.log(`💵 예상 비용: $${estimatedCost.toFixed(6)}`)
+    const totalCost = queryEmbeddingCost + chatCost
 
-    // 임베딩 비용도 추가 (질문 임베딩)
-    const queryEmbeddingCost = (Math.ceil(question.length / 4) * 0.02) / 1000000
-    console.log(`💵 질문 임베딩 비용: $${queryEmbeddingCost.toFixed(6)}`)
-    console.log(`💰 총 비용: $${(estimatedCost + queryEmbeddingCost).toFixed(6)}`)
+    console.log("💵 비용 상세:", {
+      질문_임베딩: `$${queryEmbeddingCost.toFixed(6)}`,
+      GPT_답변: `$${chatCost.toFixed(6)}`,
+      총_비용: `$${totalCost.toFixed(6)}`,
+    })
 
     return NextResponse.json({
       answer,
-      retrievedChunks: similarDocs.length,
+      retrievedChunks: similarChunks.length,
     })
   } catch (error: any) {
-    console.error("FAISS query error:", error)
+    console.error("❌ [벡터 쿼리 오류]", error)
 
     // OpenAI API 에러 처리
     if (error.status === 401) {

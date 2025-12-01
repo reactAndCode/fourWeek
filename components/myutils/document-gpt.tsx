@@ -16,7 +16,7 @@ interface DocumentSummary {
   wordCount: number
 }
 
-type ModelMode = "chat" | "vector"
+type ModelMode = "chat" | "vector" | "supa_vectorDB"
 
 export function DocumentGPT() {
   const [file, setFile] = useState<File | null>(null)
@@ -29,6 +29,8 @@ export function DocumentGPT() {
   const [isSending, setIsSending] = useState(false)
   const [modelMode, setModelMode] = useState<ModelMode>("chat")
   const [documentId, setDocumentId] = useState<string>("")
+  const [manualDocId, setManualDocId] = useState<string>("")
+  const [useExistingDoc, setUseExistingDoc] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -87,8 +89,8 @@ export function DocumentGPT() {
       console.log("Upload response:", data)
       setDocumentText(data.text)
 
-      // Vector 모드인 경우 임베딩 생성
-      if (modelMode === "vector") {
+      // Vector 모드인 경우 임베딩 생성 (vector 또는 supa_vectorDB)
+      if (modelMode === "vector" || modelMode === "supa_vectorDB") {
         const embedResponse = await fetch("/api/document-gpt/embed", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -102,7 +104,11 @@ export function DocumentGPT() {
 
         const embedData = await embedResponse.json()
         setDocumentId(embedData.documentId)
-        console.log("Embedding created:", embedData)
+        console.log("✅ 임베딩 생성 완료:", embedData)
+        console.log("📋 Document ID (재사용 가능):", embedData.documentId)
+
+        // 사용자에게 Document ID 알림
+        alert(`✅ 임베딩 생성 완료!\n\n📋 Document ID: ${embedData.documentId}\n\n이 ID를 저장하면 다음에 재사용할 수 있습니다.`)
       }
 
       // 문서 요약 요청
@@ -159,7 +165,7 @@ export function DocumentGPT() {
       return
     }
 
-    if (modelMode === "vector" && !documentId) {
+    if ((modelMode === "vector" || modelMode === "supa_vectorDB") && !documentId) {
       alert("벡터 임베딩이 준비되지 않았습니다.")
       return
     }
@@ -177,8 +183,8 @@ export function DocumentGPT() {
     try {
       let response
 
-      if (modelMode === "vector") {
-        // Vector 모드: 임베딩 기반 검색
+      if (modelMode === "vector" || modelMode === "supa_vectorDB") {
+        // Vector 모드 또는 Supabase Vector 모드: 임베딩 기반 검색
         response = await fetch("/api/document-gpt/query", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -221,6 +227,25 @@ export function DocumentGPT() {
     }
   }
 
+  // 기존 Document ID로 채팅 시작
+  const handleUseExistingDoc = () => {
+    if (!manualDocId.trim()) {
+      alert("Document ID를 입력해주세요.")
+      return
+    }
+
+    setDocumentId(manualDocId)
+    setDocumentText("existing_document") // 더미 값으로 채팅 UI 활성화
+    setUseExistingDoc(true)
+    setMessages([
+      {
+        role: "system",
+        content: `기존 문서 (ID: ${manualDocId})를 불러왔습니다.\n질문을 입력하세요.`,
+        timestamp: new Date(),
+      },
+    ])
+  }
+
   // 초기화
   const handleReset = () => {
     if (confirm("모든 데이터를 초기화하시겠습니까?")) {
@@ -230,6 +255,8 @@ export function DocumentGPT() {
       setMessages([])
       setInputMessage("")
       setDocumentId("")
+      setManualDocId("")
+      setUseExistingDoc(false)
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
@@ -283,31 +310,75 @@ export function DocumentGPT() {
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
             } ${documentText ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
           >
-            벡터 임베딩
+            벡터 임베딩 (메모리)
+          </button>
+          <button
+            onClick={() => setModelMode("supa_vectorDB")}
+            disabled={!!documentText}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              modelMode === "supa_vectorDB"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+            } ${documentText ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+          >
+            Supabase Vector
           </button>
         </div>
         <span className="text-sm text-gray-500">
           {modelMode === "chat"
             ? "전체 문서를 컨텍스트로 사용"
-            : "임베딩 벡터 기반 유사도 검색"}
+            : modelMode === "vector"
+            ? "임베딩 벡터 기반 유사도 검색 (메모리)"
+            : "Supabase pgvector 기반 유사도 검색"}
         </span>
       </div>
 
-      {/* 파일 업로드 영역 */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8">
-        <div className="flex flex-col items-center gap-4">
-          <div className="p-4 bg-blue-50 rounded-full">
-            <FileUp className="h-8 w-8 text-blue-600" />
+      {/* 기존 문서 불러오기 (벡터 모드일 때만 표시) */}
+      {!documentText && (modelMode === "vector" || modelMode === "supa_vectorDB") && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-green-900 mb-2">
+                💾 이미 임베딩된 문서가 있나요?
+              </label>
+              <input
+                type="text"
+                value={manualDocId}
+                onChange={(e) => setManualDocId(e.target.value)}
+                placeholder="Document ID 입력 (예: doc_1234567890_abc123)"
+                className="w-full px-3 py-2 text-sm border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+              <p className="text-xs text-green-600 mt-1">
+                임베딩 생성 시 콘솔에 출력된 Document ID를 입력하면 재사용할 수 있습니다
+              </p>
+            </div>
+            <Button
+              onClick={handleUseExistingDoc}
+              disabled={!manualDocId.trim()}
+              className="gap-2 bg-green-600 hover:bg-green-700"
+            >
+              불러오기
+            </Button>
           </div>
+        </div>
+      )}
 
-          <div className="text-center">
-            <h3 className="font-semibold text-gray-900 mb-1">
-              파일 업로드
-            </h3>
-            <p className="text-sm text-gray-500">
-              TXT 파일을 선택하세요 (PDF는 메타데이터만 읽기 가능, 최대 10MB)
-            </p>
-          </div>
+      {/* 파일 업로드 영역 */}
+      {!documentText && (
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8">
+          <div className="flex flex-col items-center gap-4">
+            <div className="p-4 bg-blue-50 rounded-full">
+              <FileUp className="h-8 w-8 text-blue-600" />
+            </div>
+
+            <div className="text-center">
+              <h3 className="font-semibold text-gray-900 mb-1">
+                새 문서 업로드
+              </h3>
+              <p className="text-sm text-gray-500">
+                TXT 파일을 선택하세요 (PDF는 메타데이터만 읽기 가능, 최대 10MB)
+              </p>
+            </div>
 
           <input
             ref={fileInputRef}
@@ -355,8 +426,9 @@ export function DocumentGPT() {
               )}
             </Button>
           )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 문서 요약 결과 */}
       {summary && (
@@ -386,6 +458,32 @@ export function DocumentGPT() {
               총 {summary.wordCount.toLocaleString()}자
             </span>
           </div>
+        </div>
+      )}
+
+      {/* Document ID 표시 (벡터 모드일 때) */}
+      {documentText && documentId && (modelMode === "vector" || modelMode === "supa_vectorDB") && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-blue-900">📋 Document ID</span>
+              <p className="text-sm text-blue-700 font-mono mt-1">{documentId}</p>
+            </div>
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(documentId)
+                alert("Document ID가 클립보드에 복사되었습니다!")
+              }}
+              variant="outline"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700"
+            >
+              복사
+            </Button>
+          </div>
+          <p className="text-xs text-blue-600 mt-2">
+            💡 이 ID를 저장하면 다음에 임베딩 없이 바로 채팅할 수 있습니다
+          </p>
         </div>
       )}
 

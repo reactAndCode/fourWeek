@@ -20,7 +20,9 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(del /F /Q .nextdevlock)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(dir:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []
