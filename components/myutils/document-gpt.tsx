@@ -16,6 +16,8 @@ interface DocumentSummary {
   wordCount: number
 }
 
+type ModelMode = "chat" | "faiss"
+
 export function DocumentGPT() {
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -25,6 +27,8 @@ export function DocumentGPT() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
   const [isSending, setIsSending] = useState(false)
+  const [modelMode, setModelMode] = useState<ModelMode>("chat")
+  const [documentId, setDocumentId] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -83,6 +87,24 @@ export function DocumentGPT() {
       console.log("Upload response:", data)
       setDocumentText(data.text)
 
+      // FAISS 모드인 경우 임베딩 생성
+      if (modelMode === "faiss") {
+        const embedResponse = await fetch("/api/document-gpt/embed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: data.text }),
+        })
+
+        if (!embedResponse.ok) {
+          const errorData = await embedResponse.json()
+          throw new Error(errorData.error || "임베딩 생성에 실패했습니다.")
+        }
+
+        const embedData = await embedResponse.json()
+        setDocumentId(embedData.documentId)
+        console.log("Embedding created:", embedData)
+      }
+
       // 문서 요약 요청
       const summaryResponse = await fetch("/api/document-gpt/summarize", {
         method: "POST",
@@ -137,6 +159,11 @@ export function DocumentGPT() {
       return
     }
 
+    if (modelMode === "faiss" && !documentId) {
+      alert("FAISS 임베딩이 준비되지 않았습니다.")
+      return
+    }
+
     const userMessage: Message = {
       role: "user",
       content: inputMessage,
@@ -148,15 +175,31 @@ export function DocumentGPT() {
     setIsSending(true)
 
     try {
-      const response = await fetch("/api/document-gpt/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          documentText,
-          question: inputMessage,
-          chatHistory: messages.filter((m) => m.role !== "system"),
-        }),
-      })
+      let response
+
+      if (modelMode === "faiss") {
+        // FAISS 모드: 임베딩 기반 검색
+        response = await fetch("/api/document-gpt/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            documentId,
+            question: inputMessage,
+            chatHistory: messages.filter((m) => m.role !== "system"),
+          }),
+        })
+      } else {
+        // Chat 모드: 기존 방식
+        response = await fetch("/api/document-gpt/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            documentText,
+            question: inputMessage,
+            chatHistory: messages.filter((m) => m.role !== "system"),
+          }),
+        })
+      }
 
       if (!response.ok) {
         throw new Error("답변을 받는데 실패했습니다.")
@@ -186,6 +229,7 @@ export function DocumentGPT() {
       setSummary(null)
       setMessages([])
       setInputMessage("")
+      setDocumentId("")
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
@@ -213,6 +257,40 @@ export function DocumentGPT() {
             초기화
           </Button>
         )}
+      </div>
+
+      {/* 모델 선택 */}
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <label className="font-semibold text-gray-700">모델 방식:</label>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setModelMode("chat")}
+            disabled={!!documentText}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              modelMode === "chat"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+            } ${documentText ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+          >
+            Chat (기본)
+          </button>
+          <button
+            onClick={() => setModelMode("faiss")}
+            disabled={!!documentText}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              modelMode === "faiss"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+            } ${documentText ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+          >
+            FAISS 임베딩
+          </button>
+        </div>
+        <span className="text-sm text-gray-500">
+          {modelMode === "chat"
+            ? "전체 문서를 컨텍스트로 사용"
+            : "임베딩 벡터 기반 유사도 검색"}
+        </span>
       </div>
 
       {/* 파일 업로드 영역 */}
