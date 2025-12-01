@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { OpenAIEmbeddings } from "@langchain/openai"
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters"
-import { MemoryVectorStore } from "@langchain/community/vectorstores/memory"
+import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory"
 import { randomUUID } from "crypto"
 import path from "path"
 import fs from "fs/promises"

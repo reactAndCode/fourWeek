@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { OpenAIEmbeddings } from "@langchain/openai"
-import { MemoryVectorStore } from "@langchain/community/vectorstores/memory"
+import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory"
 import OpenAI from "openai"
 import path from "path"
 import os from "os"
