@@ -3,7 +3,7 @@
 import { Languages, FlaskConical, Network, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type MenuItem = "translator" | "testA" | "testB" | "testC"
+type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "testA" | "testB" | "testC"
 
 interface SidebarProps {
   activeMenu: MenuItem
@@ -17,14 +17,29 @@ const menuItems = [
     icon: Languages,
   },
   {
-    id: "testA" as MenuItem,
+    id: "reatFlow" as MenuItem,
     label: "리액트플로우",
     icon: Network,
   },
   {
-    id: "testB" as MenuItem,
+    id: "doument" as MenuItem,
     label: "문서요약",
     icon: FileText,
+  },
+  {
+    id: "guestBook" as MenuItem,
+    label: "방명록",
+    icon: FlaskConical, 
+  },
+  {
+    id: "testA" as MenuItem,
+    label: "테스트 A",
+    icon: FlaskConical, 
+  },
+  {
+    id: "testB" as MenuItem,
+    label: "테스트 B",
+    icon: FlaskConical,
   },
   {
     id: "testC" as MenuItem,

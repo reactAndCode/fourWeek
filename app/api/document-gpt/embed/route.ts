@@ -5,6 +5,12 @@ import { splitTextIntoChunks } from "@/lib/utils/text-splitter"
 
 export async function POST(request: NextRequest) {
   try {
+    // Windows 개발 환경에서 SSL 인증서 문제 임시 해결
+    // 주의: 프로덕션에서는 제거해야 함
+    if (process.env.NODE_ENV === "development") {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+    }
+
     const { text } = await request.json()
 
     if (!text || !text.trim()) {

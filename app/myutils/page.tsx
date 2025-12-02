@@ -6,9 +6,10 @@ import { Sidebar } from "@/components/myutils/sidebar"
 import { Translator } from "@/components/myutils/translator"
 import { Mindmap } from "@/components/myutils/mindmap"
 import { DocumentGPT } from "@/components/myutils/document-gpt"
+import { Guestbook } from "@/components/myutils/guestbook"
 import { useAuth } from "@/hooks/useAuth"
 
-type MenuItem = "translator" | "testA" | "testB" | "testC"
+type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "testA" | "testB" | "testC"
 
 export default function MyUtilsPage() {
   const router = useRouter()
@@ -44,8 +45,19 @@ export default function MyUtilsPage() {
           {/* 우측 컨텐츠 (80%) */}
           <div className="bg-white rounded-xl shadow-sm p-8">
             {activeMenu === "translator" && <Translator />}
-            {activeMenu === "testA" && <Mindmap />}
-            {activeMenu === "testB" && <DocumentGPT />}
+            {activeMenu === "reatFlow" && <Mindmap />}
+            {activeMenu === "doument" && <DocumentGPT />}
+            {activeMenu === "guestBook" && <Guestbook />}
+            {activeMenu === "testA" && (
+              <div className="text-center text-gray-500 py-20">
+                테스트 A 컨텐츠 영역
+              </div>
+            )}
+            {activeMenu === "testB" && (
+              <div className="text-center text-gray-500 py-20">
+                테스트 B 컨텐츠 영역
+              </div>
+            )}
             {activeMenu === "testC" && (
               <div className="text-center text-gray-500 py-20">
                 테스트 C 컨텐츠 영역
