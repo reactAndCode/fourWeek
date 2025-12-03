@@ -21,8 +21,12 @@
       "Bash(findstr:*)",
       "Bash(del /F /Q .nextdevlock)",
       "Bash(npx tsc:*)",
+      "Bash(timeout 10 bash:*)",
+      "Bash(rm:*)",
+      "Bash(cat:*)",
       "Bash(dir:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": [],
     "ask": []
