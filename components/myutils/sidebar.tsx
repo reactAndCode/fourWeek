@@ -1,9 +1,9 @@
 "use client"
 
-import { Languages, FlaskConical, Network, FileText, Database } from "lucide-react"
+import { Languages, FlaskConical, Network, FileText, Database, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "dataTransform" | "testA" | "testB" | "testC"
+type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "dataTransform" | "tripPlanner" | "testA" | "testB" | "testC"
 
 interface SidebarProps {
   activeMenu: MenuItem
@@ -35,6 +35,11 @@ const menuItems = [
     id: "dataTransform" as MenuItem,
     label: "Data변환",
     icon: Database,
+  },
+  {
+    id: "tripPlanner" as MenuItem,
+    label: "여행경로",
+    icon: MapPin,
   },
   {
     id: "testA" as MenuItem,

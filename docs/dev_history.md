@@ -25,6 +25,63 @@
 - 결과 복사 기능
 - 통계 표시 (원본 개수/최종 개수)
 
+- 핵심 로직: generateInClause()
+  1.1 입력값 파싱 (59-65행)
+  - 입력값을 줄바꿈으로 분리하고 trim  
+  - 원본 개수 저장
+
+  1.2 빈 값 처리 (67-70행)
+  if (ignoreEmpty) {
+    values = values.filter(v => v !== "")
+  }
+
+  옵션: 빈 값 무시 (기본 활성화)
+
+  1.3 중복 제거 (72-75행)
+
+  if (removeDuplicates) {
+    values = [...new Set(values)]
+  }
+
+  처리 방식:
+  - JavaScript Set 사용하여 중복 제거
+  - Spread operator로 배열 변환
+
+  1.4 정렬 (77-80행)
+
+  if (sortAscending) {
+    values.sort()
+  }
+
+  옵션: 오름차순 정렬 (기본 비활성화)
+
+  1.5 문자열 감싸기 (90-96행)
+  
+  1.6 줄바꿈 처리 (98-111행)  
+  - maxPerLine > 0: 지정된 개수마다 줄바꿈
+  - maxPerLine = 0: 모두 한 줄에 출력
+
+  예시:
+  maxPerLine = 3인 경우:
+  '404', '405', '406',
+  '407', '408', '409'
+
+  1.7 템플릿 적용 (113-121행)
+  옵션:
+  - parens: ('404', '405', '406')
+  - brackets: ['404', '405', '406']
+  - braces: {'404', '405', '406'}
+  - none: '404', '405', '406'
+
+  1.8 접두사/접미사 추가 (123-129행)
+  - 앞에 붙일 문자열 뒤에 붙일 문자열 처리 
+  if (prefix) {
+    result = `${prefix} ${result}`
+  }
+  if (suffix) {
+    result = `${result} ${suffix}`
+  }
+
 #### 2. 값 비교 도구
 - A/B 두 값 목록 비교 기능
 - 비교 결과
