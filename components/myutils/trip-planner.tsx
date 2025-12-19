@@ -122,7 +122,7 @@ export function TripPlanner() {
   return (
     <div className="flex gap-4 h-[calc(100vh-200px)]">
       {/* 좌측: 여행 계획 섹션 */}
-      <div className="w-64 flex flex-col gap-4">
+      <div className="w-32 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold">여행 계획 마다</h2>
           <button
@@ -204,7 +204,7 @@ export function TripPlanner() {
       </div>
 
       {/* 우측: 상세 정보 섹션 */}
-      <div className="w-80 flex flex-col gap-4">
+      <div className="w-40 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold">장소 상세</h2>
         </div>

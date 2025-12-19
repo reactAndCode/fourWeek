@@ -152,3 +152,91 @@
 - 커밋 해시: 7dd5fb9
 - 변경 파일: 11개
 - 추가된 코드: 1,550줄
+
+---
+
+### 여행경로 (Trip 스케치) 기능 추가
+
+#### 새로운 기능
+- **여행경로 메뉴 추가**
+  - 나의유틸 좌측 메뉴에 "여행경로" 메뉴 추가
+  - MapPin 아이콘 사용
+  - 3개 섹션으로 구성된 여행 계획 도구
+
+#### 레이아웃 구조 (3-Column)
+1. **좌측 - 여행 계획 섹션** (w-32, 128px)
+   - 여행 목록 표시
+   - 여행명, 시작일, 종료일 정보
+   - 선택된 여행 하이라이트
+   - 여행 추가 버튼 (모달)
+
+2. **중앙 - Google Maps 섹션** (flex-1, 최대 공간)
+   - Google Maps JavaScript API 통합
+   - 강남구 중심 (lat: 37.4979, lng: 127.0276)
+   - 장소 마커 표시 (번호 라벨)
+   - 장소 검색 입력 필드
+   - 장소 추가 버튼
+
+3. **우측 - 장소 상세 섹션** (w-40, 160px)
+   - 선택된 여행의 Day 정보
+   - 경로(장소) 목록
+   - 장소별 정보: 이름, 주소, 시간
+   - 편집/복제/삭제 버튼
+
+#### 주요 기능
+- **여행 관리**
+  - 여행 추가: 여행명, 출발일, 도착일
+  - 여행 선택 시 해당 여행의 장소 목록 표시
+
+- **장소 관리**
+  - 장소 추가: 경도/위도, 이름, 주소, 시작/종료 시간, 메모
+  - 지도에 마커로 표시 (순서대로 번호 라벨)
+  - 마커 클릭 시 상세 정보 표시
+
+- **Google Maps 연동**
+  - @react-google-maps/api 패키지 사용
+  - LoadScript, GoogleMap, Marker 컴포넌트
+  - 환경변수로 API 키 관리 (NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
+
+#### 레이아웃 최적화
+- 초기 레이아웃: 좌측 256px, 우측 320px
+- 최적화 후: 좌측 128px, 우측 160px (각 50% 축소)
+- 지도 섹션 확대로 사용성 개선
+
+#### 기술적 변경사항
+- **새 파일 생성**
+  - `components/myutils/trip-planner.tsx` - Trip 스케치 메인 컴포넌트
+
+- **수정된 파일**
+  - `components/myutils/sidebar.tsx` - 여행경로 메뉴 추가
+  - `app/myutils/page.tsx` - TripPlanner 컴포넌트 연결
+  - `.env.local` - Google Maps API 키 추가
+
+- **패키지 추가**
+  - `@react-google-maps/api: ^2.19.3`
+
+#### 데이터 모델
+```typescript
+interface Trip {
+  id: string
+  name: string
+  startDate: string
+  endDate: string
+}
+
+interface Place {
+  id: string
+  name: string
+  address: string
+  lat: number
+  lng: number
+  startTime: string
+  endTime: string
+  memo: string
+}
+```
+
+#### 커밋 정보
+- 커밋 메시지: "feat: 여행경로(Trip 스케치) 기능 추가"
+- 변경 파일: 5개
+- 추가된 코드: ~450줄
