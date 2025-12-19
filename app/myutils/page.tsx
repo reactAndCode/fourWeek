@@ -7,9 +7,10 @@ import { Translator } from "@/components/myutils/translator"
 import { Mindmap } from "@/components/myutils/mindmap"
 import { DocumentGPT } from "@/components/myutils/document-gpt"
 import { Guestbook } from "@/components/myutils/guestbook"
+import { DataTransform } from "@/components/myutils/data-transform"
 import { useAuth } from "@/hooks/useAuth"
 
-type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "testA" | "testB" | "testC"
+type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "dataTransform" | "testA" | "testB" | "testC"
 
 export default function MyUtilsPage() {
   const router = useRouter()
@@ -48,6 +49,7 @@ export default function MyUtilsPage() {
             {activeMenu === "reatFlow" && <Mindmap />}
             {activeMenu === "doument" && <DocumentGPT />}
             {activeMenu === "guestBook" && <Guestbook />}
+            {activeMenu === "dataTransform" && <DataTransform />}
             {activeMenu === "testA" && (
               <div className="text-center text-gray-500 py-20">
                 테스트 A 컨텐츠 영역

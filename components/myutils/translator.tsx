@@ -90,7 +90,7 @@ export function Translator() {
 
   return (
     <div className="space-y-6">
-      <h5 className="text-xl font-bold">번역</h5>
+      <h5 className="text-xl font-bold">번역/이미지생성 </h5>
       <span>
          MyMemory Translation API (https://mymemory.translated.net/)를 사용합니다.
       </span>
