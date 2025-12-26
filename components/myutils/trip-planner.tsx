@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,11 +45,20 @@ const mapOptions = {
   fullscreenControl: true,
 }
 
+const mapLibraries = ["places"] as const
+
+interface SearchResult {
+  placeId: string
+  mainText: string
+  secondaryText: string
+}
+
 export function TripPlanner() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
   const [places, setPlaces] = useState<Place[]>([])
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
+  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
 
   // 지도 중심 좌표
   const [mapCenter, setMapCenter] = useState(gangnamCenter)
@@ -75,6 +84,11 @@ export function TripPlanner() {
     endTime: "",
     memo: "",
   })
+
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [isResultsOpen, setIsResultsOpen] = useState(false)
 
   const handleAddTrip = () => {
     if (!newTrip.name || !newTrip.startDate || !newTrip.endDate) {
@@ -117,6 +131,70 @@ export function TripPlanner() {
       memo: "",
     })
     setShowPlaceModal(false)
+  }
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      setIsResultsOpen(false)
+      return
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (!window.google?.maps?.places) {
+        return
+      }
+
+      setIsSearching(true)
+      const service = new window.google.maps.places.AutocompleteService()
+      service.getPlacePredictions(
+        { input: searchQuery },
+        (predictions, status) => {
+          if (status !== window.google.maps.places.PlacesServiceStatus.OK || !predictions) {
+            setSearchResults([])
+            setIsResultsOpen(false)
+            setIsSearching(false)
+            return
+          }
+
+          const results = predictions.map((prediction) => ({
+            placeId: prediction.place_id,
+            mainText: prediction.structured_formatting.main_text,
+            secondaryText: prediction.structured_formatting.secondary_text || "",
+          }))
+          setSearchResults(results)
+          setIsResultsOpen(true)
+          setIsSearching(false)
+        }
+      )
+    }, 250)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery])
+
+  const handleSelectSearchResult = (result: SearchResult) => {
+    if (!window.google?.maps?.places || !mapInstance) {
+      return
+    }
+
+    const placesService = new window.google.maps.places.PlacesService(mapInstance)
+    placesService.getDetails(
+      {
+        placeId: result.placeId,
+        fields: ["name", "geometry", "formatted_address"],
+      },
+      (details, status) => {
+        if (status !== window.google.maps.places.PlacesServiceStatus.OK || !details?.geometry?.location) {
+          return
+        }
+
+        const location = details.geometry.location
+        const nextCenter = { lat: location.lat(), lng: location.lng() }
+        setMapCenter(nextCenter)
+        setSearchQuery(details.name || result.mainText)
+        setIsResultsOpen(false)
+      }
+    )
   }
 
   return (
@@ -177,12 +255,60 @@ export function TripPlanner() {
 
         {/* 지도 영역 */}
         <div className="flex-1 bg-gray-100 rounded-lg relative overflow-hidden">
-          <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}>
+          <div className="absolute top-4 left-1/2 z-10 w-[520px] max-w-[90%] -translate-x-1/2">
+            <div className="flex items-center gap-3 rounded-full border border-orange-200 bg-white px-4 py-3 shadow-lg">
+              <Search className="h-4 w-4 text-orange-500" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => searchResults.length > 0 && setIsResultsOpen(true)}
+                placeholder="장소 검색"
+                className="flex-1 bg-transparent text-sm outline-none"
+              />
+              {isSearching && (
+                <span className="text-xs text-gray-400">검색중...</span>
+              )}
+            </div>
+
+            {isResultsOpen && searchResults.length > 0 && (
+              <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-xl">
+                <ul className="max-h-80 overflow-y-auto">
+                  {searchResults.map((result) => (
+                    <li key={result.placeId}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSearchResult(result)}
+                        className="flex w-full items-start gap-3 border-b border-gray-100 px-5 py-4 text-left hover:bg-orange-50"
+                      >
+                        <MapPin className="mt-1 h-4 w-4 text-orange-500" />
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900">
+                            {result.mainText}
+                          </div>
+                          {result.secondaryText && (
+                            <div className="text-xs text-gray-500">
+                              {result.secondaryText}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <LoadScript
+            googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
+            libraries={mapLibraries}
+          >
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
               center={mapCenter}
               zoom={15}
               options={mapOptions}
+              onLoad={(map) => setMapInstance(map)}
             >
               {/* 장소 마커 표시 */}
               {places.map((place, index) => (

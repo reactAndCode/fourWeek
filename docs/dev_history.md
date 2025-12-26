@@ -1,5 +1,105 @@
 # 개발 이력
 
+## 2025-12-26
+
+### 캘린더 기능 추가 및 Supabase 연동
+
+#### 새로운 기능
+- **캘린더 메뉴 추가**
+  - 나의유틸 좌측 메뉴에 "캘린더" 메뉴 추가 (여행경로 아래)
+  - Calendar 아이콘 사용
+  - 월간 캘린더 뷰 제공
+
+#### 캘린더 기능
+1. **좌측 작은 달력**
+   - 월간 미니 캘린더 표시
+   - 이전달/다음달 네비게이션
+   - 년도 변경 버튼 (전년도, 현재년도, 다음년도)
+   - 오늘 날짜 파란색 원으로 강조
+   - 선택된 날짜 파란색 배경
+   - "만들기" 버튼으로 일정 추가 팝업
+
+2. **중앙 큰 달력**
+   - 전체 화면 월간 캘린더
+   - "오늘" 버튼으로 현재 날짜 빠른 이동
+   - 년도 변경 및 월 네비게이션
+   - 일정이 녹색 배지로 표시
+   - 날짜 클릭으로 일정 추가 가능
+
+3. **일정 추가 팝업**
+   - 선택된 날짜 표시 (읽기 전용)
+   - 제목 입력 필드
+   - 상세정보 입력 (Textarea)
+   - 저장/취소 버튼
+   - Supabase 자동 저장
+
+4. **한국 공휴일 자동 표시**
+   - 2025년 공휴일: 신정, 설날 연휴(3일), 삼일절, 어린이날, 부처님오신날, 현충일, 광복절, 추석 연휴(3일), 개천절, 한글날, 크리스마스
+   - 2026년 공휴일도 포함
+   - 공휴일은 녹색 배지로 표시
+
+#### Supabase 연동
+- **테이블 생성**: calendar_events
+  - 컬럼: id, user_id, date, title, description, created_at, updated_at
+  - RLS 정책: 사용자별 데이터 격리
+  - 인덱스: user_id, date, (user_id, date) 복합 인덱스
+  - 트리거: updated_at 자동 업데이트
+
+- **API 함수** (lib/api/calendar.ts)
+  - getCalendarEventsByMonth: 월별 일정 조회
+  - getCalendarEventsByYear: 년도별 일정 조회
+  - getAllCalendarEvents: 모든 일정 조회
+  - createCalendarEvent: 일정 생성
+  - updateCalendarEvent: 일정 수정
+  - deleteCalendarEvent: 일정 삭제
+  - getCalendarEventsByDate: 특정 날짜 일정 조회
+
+- **실시간 데이터 로드**
+  - useEffect로 년도 변경 시 자동 로드
+  - 로딩 상태 관리
+  - 공휴일과 사용자 일정 분리 관리
+
+#### 기술적 변경사항
+- **새 파일 생성**
+  - `components/myutils/calendar.tsx` - 캘린더 메인 컴포넌트 (~620줄)
+  - `lib/api/calendar.ts` - 캘린더 API 함수
+  - `types/calendar.types.ts` - 캘린더 타입 정의
+  - `docs/supabase_calendar_events.sql` - Supabase 테이블 생성 스크립트
+
+- **수정된 파일**
+  - `components/myutils/sidebar.tsx` - 캘린더 메뉴 추가
+  - `app/myutils/page.tsx` - CalendarView 컴포넌트 연결
+
+#### 데이터 모델
+```typescript
+// Supabase 테이블 타입
+interface CalendarEvent {
+  id: string
+  user_id: string
+  date: string // YYYY-MM-DD
+  title: string
+  description: string
+  created_at: string
+  updated_at: string
+}
+
+// 클라이언트 타입 (공휴일 포함)
+interface Event {
+  id: string
+  date: string // YYYY-MM-DD
+  title: string
+  description: string
+  isHoliday?: boolean
+}
+```
+
+#### 커밋 정보
+- 커밋 메시지: "feat: 캘린더 기능 추가 및 Supabase 연동"
+- 변경 파일: 6개
+- 추가된 코드: ~820줄
+
+---
+
 ## 2024-12-19
 
 ### 데이터 변환 도구 추가 (4가지 변환 기능)
@@ -240,3 +340,10 @@ interface Place {
 - 커밋 메시지: "feat: 여행경로(Trip 스케치) 기능 추가"
 - 변경 파일: 5개
 - 추가된 코드: ~450줄
+
+지도에 워터마크 나오는 오류 해결 
+Google Cloud Console → Billing → 결제 계정 생성/연결
+프로젝트가 올바른지 확인 (현재 프로젝트에 billing 연결)
+Maps JavaScript API가 활성화 되어 있는지 재확인
+키 제한(HTTP referrer)에 http://localhost:3000/* 추가
+.env.local 변경 시 dev 서버 재기동
