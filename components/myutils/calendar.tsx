@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/hooks/useAuth"
-import { getCalendarEventsByYear, createCalendarEvent } from "@/lib/api/calendar"
+import { getCalendarEventsByYear, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/lib/api/calendar"
 import { Event } from "@/types/calendar.types"
 
 // 한국 공휴일 데이터
@@ -51,12 +51,15 @@ export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showEventModal, setShowEventModal] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [userEvents, setUserEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
 
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
+    start_time: "",
+    end_time: "",
   })
 
   // 사용자 일정 + 공휴일 합치기
@@ -81,6 +84,8 @@ export function CalendarView() {
           date: event.date,
           title: event.title,
           description: event.description || "",
+          start_time: event.start_time || "",
+          end_time: event.end_time || "",
           isHoliday: false,
         }))
 
@@ -170,6 +175,31 @@ export function CalendarView() {
     setSelectedDate(selected)
   }
 
+  // 일정 클릭 (수정 팝업 열기)
+  const handleEventClick = (event: Event, e: React.MouseEvent) => {
+    e.stopPropagation() // 날짜 클릭 이벤트 막기
+
+    // 공휴일은 수정 불가
+    if (event.isHoliday) return
+
+    setEditingEvent(event)
+    setSelectedDate(new Date(event.date))
+    setNewEvent({
+      title: event.title,
+      description: event.description,
+      start_time: event.start_time || "",
+      end_time: event.end_time || "",
+    })
+    setShowEventModal(true)
+  }
+
+  // 일정 추가 모달 열기
+  const openAddEventModal = () => {
+    setEditingEvent(null)
+    setNewEvent({ title: "", description: "", start_time: "", end_time: "" })
+    setShowEventModal(true)
+  }
+
   // 일정 추가
   const handleAddEvent = async () => {
     if (!user) {
@@ -188,13 +218,24 @@ export function CalendarView() {
     }
 
     try {
-      // Supabase에 저장
-      const createdEvent = await createCalendarEvent({
+      // undefined 값 제거
+      const eventData: any = {
         user_id: user.id,
         date: formatDate(selectedDate),
         title: newEvent.title,
         description: newEvent.description || "",
-      })
+      }
+
+      if (newEvent.start_time) {
+        eventData.start_time = newEvent.start_time
+      }
+
+      if (newEvent.end_time) {
+        eventData.end_time = newEvent.end_time
+      }
+
+      // Supabase에 저장
+      const createdEvent = await createCalendarEvent(eventData)
 
       // 로컬 상태 업데이트
       const newEventData: Event = {
@@ -202,15 +243,108 @@ export function CalendarView() {
         date: createdEvent.date,
         title: createdEvent.title,
         description: createdEvent.description || "",
+        start_time: createdEvent.start_time || "",
+        end_time: createdEvent.end_time || "",
         isHoliday: false,
       }
 
       setUserEvents([...userEvents, newEventData])
-      setNewEvent({ title: "", description: "" })
+      setNewEvent({ title: "", description: "", start_time: "", end_time: "" })
       setShowEventModal(false)
     } catch (error) {
       console.error("일정 추가 실패:", error)
-      alert("일정 추가에 실패했습니다.")
+      if (error instanceof Error) {
+        alert(`일정 추가에 실패했습니다: ${error.message}`)
+      } else {
+        alert("일정 추가에 실패했습니다. Supabase 테이블에 start_time, end_time 컬럼이 추가되었는지 확인해주세요.")
+      }
+    }
+  }
+
+  // 일정 수정
+  const handleUpdateEvent = async () => {
+    if (!user || !editingEvent) return
+
+    if (!newEvent.title.trim()) {
+      alert("제목을 입력해주세요.")
+      return
+    }
+
+    try {
+      // undefined 값 제거
+      const updates: any = {
+        title: newEvent.title,
+        description: newEvent.description || "",
+      }
+
+      if (selectedDate) {
+        updates.date = formatDate(selectedDate)
+      }
+
+      if (newEvent.start_time) {
+        updates.start_time = newEvent.start_time
+      }
+
+      if (newEvent.end_time) {
+        updates.end_time = newEvent.end_time
+      }
+
+      const updatedEvent = await updateCalendarEvent(editingEvent.id, updates)
+
+      // 로컬 상태 업데이트
+      const updatedEvents = userEvents.map((event) =>
+        event.id === editingEvent.id
+          ? {
+              ...event,
+              date: updatedEvent.date,
+              title: updatedEvent.title,
+              description: updatedEvent.description || "",
+              start_time: updatedEvent.start_time || "",
+              end_time: updatedEvent.end_time || "",
+            }
+          : event
+      )
+
+      setUserEvents(updatedEvents)
+      setNewEvent({ title: "", description: "", start_time: "", end_time: "" })
+      setEditingEvent(null)
+      setShowEventModal(false)
+    } catch (error) {
+      console.error("일정 수정 실패:", error)
+      if (error instanceof Error) {
+        alert(`일정 수정에 실패했습니다: ${error.message}`)
+      } else {
+        alert("일정 수정에 실패했습니다. Supabase 테이블에 start_time, end_time 컬럼이 추가되었는지 확인해주세요.")
+      }
+    }
+  }
+
+  // 일정 삭제
+  const handleDeleteEvent = async () => {
+    if (!editingEvent) return
+
+    if (!confirm("일정을 삭제하시겠습니까?")) return
+
+    try {
+      await deleteCalendarEvent(editingEvent.id)
+
+      // 로컬 상태 업데이트
+      setUserEvents(userEvents.filter((event) => event.id !== editingEvent.id))
+      setNewEvent({ title: "", description: "", start_time: "", end_time: "" })
+      setEditingEvent(null)
+      setShowEventModal(false)
+    } catch (error) {
+      console.error("일정 삭제 실패:", error)
+      alert("일정 삭제에 실패했습니다.")
+    }
+  }
+
+  // 모달 닫기 및 저장
+  const handleSaveEvent = () => {
+    if (editingEvent) {
+      handleUpdateEvent()
+    } else {
+      handleAddEvent()
     }
   }
 
@@ -319,7 +453,7 @@ export function CalendarView() {
 
         {/* 만들기 버튼 */}
         <Button
-          onClick={() => setShowEventModal(true)}
+          onClick={openAddEventModal}
           className="w-full gap-2"
         >
           <Plus className="h-4 w-4" />
@@ -432,8 +566,14 @@ export function CalendarView() {
                     {dayEvents.map((event) => (
                       <div
                         key={event.id}
-                        className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded truncate"
+                        onClick={(e) => handleEventClick(event, e)}
+                        className={`px-2 py-1 rounded truncate ${
+                          event.isHoliday
+                            ? "bg-green-100 text-green-800 text-xs"
+                            : "bg-blue-100 text-blue-800 text-[10px] cursor-pointer hover:bg-blue-200"
+                        }`}
                       >
+                        {event.isHoliday && event.start_time && `${event.start_time} `}
                         {event.title}
                       </div>
                     ))}
@@ -448,13 +588,16 @@ export function CalendarView() {
       {/* 일정 추가 모달 */}
       {showEventModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
+          <div className="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">일정 추가</h3>
+              <h3 className="text-lg font-bold">
+                {editingEvent ? "일정 수정" : "일정 추가"}
+              </h3>
               <button
                 onClick={() => {
                   setShowEventModal(false)
-                  setNewEvent({ title: "", description: "" })
+                  setEditingEvent(null)
+                  setNewEvent({ title: "", description: "", start_time: "", end_time: "" })
                 }}
                 className="p-1 hover:bg-gray-100 rounded"
               >
@@ -467,11 +610,36 @@ export function CalendarView() {
                 <Label htmlFor="eventDate">날짜</Label>
                 <Input
                   id="eventDate"
-                  type="text"
-                  value={selectedDate ? formatDate(selectedDate) : "날짜를 선택해주세요"}
-                  readOnly
-                  className="bg-gray-50"
+                  type="date"
+                  value={selectedDate ? formatDate(selectedDate) : ""}
+                  onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                  className="bg-white"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="startTime">시작 시간</Label>
+                  <Input
+                    id="startTime"
+                    type="time"
+                    value={newEvent.start_time}
+                    onChange={(e) =>
+                      setNewEvent({ ...newEvent, start_time: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="endTime">종료 시간</Label>
+                  <Input
+                    id="endTime"
+                    type="time"
+                    value={newEvent.end_time}
+                    onChange={(e) =>
+                      setNewEvent({ ...newEvent, end_time: e.target.value })
+                    }
+                  />
+                </div>
               </div>
 
               <div>
@@ -501,13 +669,23 @@ export function CalendarView() {
             </div>
 
             <div className="flex gap-2 mt-6">
-              <Button onClick={handleAddEvent} className="flex-1">
-                저장
+              {editingEvent && (
+                <Button
+                  onClick={handleDeleteEvent}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  삭제
+                </Button>
+              )}
+              <Button onClick={handleSaveEvent} className="flex-1">
+                {editingEvent ? "수정" : "저장"}
               </Button>
               <Button
                 onClick={() => {
                   setShowEventModal(false)
-                  setNewEvent({ title: "", description: "" })
+                  setEditingEvent(null)
+                  setNewEvent({ title: "", description: "", start_time: "", end_time: "" })
                 }}
                 variant="outline"
                 className="flex-1"

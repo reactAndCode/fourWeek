@@ -98,6 +98,75 @@ interface Event {
 - 변경 파일: 6개
 - 추가된 코드: ~820줄
 
+### 캘린더 기능 개선 - 시간 입력 및 수정 기능 추가
+
+#### 추가 기능
+1. **시간 입력 필드 추가**
+   - 시작 시간 (start_time) 입력 필드
+   - 종료 시간 (end_time) 입력 필드
+   - HTML5 time input 사용
+   - Supabase 테이블에 TIME 타입 컬럼 추가
+
+2. **일정 수정 기능**
+   - 사용자 일정 배지 클릭 시 수정 팝업
+   - 공휴일은 클릭해도 수정 불가
+   - 날짜, 시간, 제목, 상세정보 모두 수정 가능
+   - 수정/삭제 버튼 제공
+
+3. **일정 배지 색상 구분**
+   - 공휴일: 녹색 배지 (bg-green-100)
+   - 사용자 일정: 연한블루 배지 (bg-blue-100)
+   - 사용자 일정에만 hover 효과 및 클릭 가능
+
+4. **UI 개선**
+   - 모달 제목: "일정 추가" / "일정 수정" 구분
+   - 날짜 필드: date picker로 직접 선택 가능
+   - 삭제 버튼: 수정 모드에만 표시 (빨간색)
+   - 블루 배지 글자 크기: 10px (작게)
+   - 블루 배지: 제목만 표시 (시간 제외)
+
+#### 기술적 변경사항
+- **수정된 파일**
+  - `components/myutils/calendar.tsx`
+    - handleEventClick: 일정 클릭 시 수정 모달
+    - handleUpdateEvent: 일정 수정 API 호출
+    - handleDeleteEvent: 일정 삭제 (확인 대화상자)
+    - 시간 입력 필드 UI 추가
+    - undefined 값 처리 개선
+    - 오류 메시지 개선
+  - `types/calendar.types.ts`
+    - start_time, end_time 필드 추가
+  - `docs/supabase_calendar_events.sql`
+    - start_time TIME 컬럼 추가
+    - end_time TIME 컬럼 추가
+
+#### 데이터 모델 업데이트
+```typescript
+interface CalendarEvent {
+  id: string
+  user_id: string
+  date: string // YYYY-MM-DD
+  title: string
+  description: string
+  start_time?: string // HH:MM
+  end_time?: string // HH:MM
+  created_at: string
+  updated_at: string
+}
+```
+
+#### Supabase 테이블 업데이트
+```sql
+ALTER TABLE calendar_events
+ADD COLUMN IF NOT EXISTS start_time TIME,
+ADD COLUMN IF NOT EXISTS end_time TIME;
+```
+
+#### 커밋 정보
+- 커밋 메시지: "feat: 캘린더 일정 수정/삭제 및 시간 입력 기능 추가"
+- 변경 파일: 3개
+- 추가된 코드: ~150줄
+
 ---
 
 ## 2024-12-19

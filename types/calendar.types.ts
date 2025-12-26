@@ -8,6 +8,8 @@ export interface CalendarEvent {
   date: string // YYYY-MM-DD
   title: string
   description: string
+  start_time?: string // HH:MM
+  end_time?: string // HH:MM
   created_at: string
   updated_at: string
 }
@@ -17,12 +19,16 @@ export interface CalendarEventInsert {
   date: string
   title: string
   description?: string
+  start_time?: string
+  end_time?: string
 }
 
 export interface CalendarEventUpdate {
   date?: string
   title?: string
   description?: string
+  start_time?: string
+  end_time?: string
 }
 
 /**
@@ -33,5 +39,7 @@ export interface Event {
   date: string // YYYY-MM-DD
   title: string
   description: string
+  start_time?: string // HH:MM
+  end_time?: string // HH:MM
   isHoliday?: boolean // 공휴일 여부
 }

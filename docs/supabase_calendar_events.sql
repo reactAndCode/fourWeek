@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   date DATE NOT NULL,
   title TEXT NOT NULL,
   description TEXT DEFAULT '',
+  start_time TIME,
+  end_time TIME,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -69,6 +71,8 @@ CREATE TRIGGER set_updated_at
 -- date        : DATE - 일정 날짜 (YYYY-MM-DD)
 -- title       : TEXT - 일정 제목
 -- description : TEXT - 일정 상세 정보
+-- start_time  : TIME - 시작 시간 (HH:MM:SS) - 선택적
+-- end_time    : TIME - 종료 시간 (HH:MM:SS) - 선택적
 -- created_at  : TIMESTAMP - 생성 시간 (자동)
 -- updated_at  : TIMESTAMP - 수정 시간 (자동 업데이트)
 -- ============================================
