@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api"
+import type { Libraries } from "@react-google-maps/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,7 +46,7 @@ const mapOptions = {
   fullscreenControl: true,
 }
 
-const mapLibraries = ["places"] as const
+const mapLibraries: Libraries = ["places"]
 
 interface SearchResult {
   placeId: string
