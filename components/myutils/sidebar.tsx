@@ -1,9 +1,9 @@
 "use client"
 
-import { Languages, FlaskConical, Network, FileText, Database, MapPin, Calendar } from "lucide-react"
+import { Languages, FlaskConical, Network, FileText, Database, MapPin, Calendar, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "dataTransform" | "tripPlanner" | "calendar" | "testA" | "testB" | "testC"
+type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "dataTransform" | "tripPlanner" | "calendar" | "fortune" | "testA" | "testB" | "testC"
 
 interface SidebarProps {
   activeMenu: MenuItem
@@ -45,6 +45,11 @@ const menuItems = [
     id: "calendar" as MenuItem,
     label: "캘린더",
     icon: Calendar,
+  },
+  {
+    id: "fortune" as MenuItem,
+    label: "신년운세",
+    icon: Sparkles,
   },
   {
     id: "testA" as MenuItem,

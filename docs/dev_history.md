@@ -1,5 +1,172 @@
 # 개발 이력
 
+## 2026-01-02
+
+### 신년운세 기능 추가 (탭 UI: 신년운세 / 오늘의운세)
+
+#### 새로운 기능
+- **신년운세 메뉴 추가**
+  - 나의유틸 좌측 메뉴에 "신년운세" 메뉴 추가 (캘린더 아래)
+  - Sparkles 아이콘 사용
+  - 탭 UI로 신년운세와 오늘의운세 제공
+
+#### 1. 신년운세 기능
+- **입력 폼**
+  - 이름, 생년월일, 태어난 시각, 이메일 (4개 컬럼 한 줄 배치)
+  - 기본값 설정: 윤상민, 1974-08-03, 13:30, yoon.lion@gmail.com
+  - 입력값 유지 (탭 전환 시에도 유지)
+
+- **운세 내용**
+  - 종합운, 애정운, 직업운, 재물운, 건강운
+  - 행운의 색상 및 숫자
+  - 한마디 조언
+  - 생년월일과 태어난 시각 기반 개인화
+
+- **간지(干支) 계산**
+  - 천간(天干) 10개: 갑, 을, 병, 정, 무, 기, 경, 신, 임, 계
+  - 지지(地支) 12개: 자, 축, 인, 묘, 진, 사, 오, 미, 신, 유, 술, 해
+  - 오행 색상 계산: 푸른, 붉은, 노란, 흰, 검은
+  - 2026년 = 병오년 붉은 말의 해 (자동 계산)
+
+- **이메일 전송 기능**
+  - Resend API 통합 (@resend 패키지)
+  - HTML 이메일 템플릿 (그라데이션, 섹션별 카드)
+  - 환경변수: RESEND_API_KEY, RESEND_FROM_EMAIL
+  - 도메인 인증 시 누구에게나 전송 가능
+  - 무료 티어 제한: onboarding@resend.dev는 본인 이메일만
+
+#### 2. 오늘의운세 기능
+- **입력 정보 공유**
+  - 신년운세에서 입력한 정보 그대로 사용
+  - 이메일 필드 불필요 (오늘의운세는 이메일 전송 없음)
+
+- **운세 내용**
+  - 오늘의 날짜 표시 (한국어 형식)
+  - 오늘의 종합운
+  - 행운의 시간 (오전/오후/저녁 구분)
+  - 주의할 점 (재정/감정/건강 등)
+  - 행운의 시간대 (예: 14:00-16:00)
+  - 행운의 아이템 (파란색 볼펜, 노트, 커피, 식물, 책)
+  - 오늘의 한마디
+
+- **생성 로직**
+  - 생년월일, 태어난 시각 기반
+  - 오늘 요일, 월, 일 조합으로 다양한 운세 생성
+  - 주말/평일 구분 조언
+
+#### 3. UI/UX
+- **Tabs 컴포넌트** (@radix-ui/react-tabs)
+  - 신년운세 탭 (Sparkles 아이콘, 노란색/주황색 테마)
+  - 오늘의운세 탭 (Sun 아이콘, 파란색/인디고 테마)
+
+- **카드 디자인**
+  - 신년운세: 노란색→주황색 그라데이션 배경
+  - 오늘의운세: 파란색→인디고 그라데이션 배경
+  - 섹션별 흰 배경 카드
+  - 이모지 아이콘 활용
+
+- **반응형 레이아웃**
+  - 입력 폼: grid-cols-4 (4개 컬럼)
+  - 행운 정보: grid-cols-2 (2개 컬럼)
+
+#### 이메일 전송 설정
+- **Resend 도메인 인증 방법**
+  1. https://resend.com/domains 에서 도메인 추가
+  2. DNS 레코드 설정 (SPF, DKIM)
+  3. `.env.local`에 `RESEND_FROM_EMAIL` 설정
+  4. 개발 서버 재시작
+
+- **API 라우트** (`app/api/send-fortune/route.ts`)
+  - POST /api/send-fortune
+  - 운세 결과를 HTML 이메일로 전송
+  - 에러 로깅 및 응답 개선
+  - 환경변수 검증
+
+#### 기술적 변경사항
+- **새 파일 생성**
+  - `components/myutils/fortune.tsx` - 신년운세 메인 컴포넌트 (~460줄)
+  - `components/ui/tabs.tsx` - Tabs UI 컴포넌트 (Radix UI)
+  - `app/api/send-fortune/route.ts` - 이메일 전송 API 라우트 (~240줄)
+
+- **수정된 파일**
+  - `components/myutils/sidebar.tsx` - 신년운세 메뉴 추가
+  - `app/myutils/page.tsx` - Fortune 컴포넌트 연결
+  - `.env.local` - Resend API 키 및 발신자 이메일 추가
+
+- **패키지 추가**
+  - `resend: latest` - 이메일 전송
+  - `@radix-ui/react-tabs: latest` - Tabs UI
+
+#### 데이터 모델
+```typescript
+// 입력 데이터
+interface FortuneData {
+  name: string
+  birthDate: string // YYYY-MM-DD
+  birthTime: string // HH:MM
+  email: string
+}
+
+// 신년운세 결과
+interface FortuneResult {
+  year: string
+  overall: string
+  love: string
+  career: string
+  wealth: string
+  health: string
+  luckyColor: string
+  luckyNumber: string
+  advice: string
+}
+
+// 오늘의운세 결과
+interface DailyFortune {
+  date: string
+  overall: string
+  lucky: string
+  caution: string
+  luckyTime: string // HH:MM - HH:MM
+  luckyItem: string
+  advice: string
+}
+```
+
+#### 간지 계산 로직
+```typescript
+const getGanjiYear = (year: number) => {
+  const cheongan = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"]
+  const jiji = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"]
+  const jijiAnimals = ["쥐", "소", "호랑이", "토끼", "용", "뱀", "말", "양", "원숭이", "닭", "개", "돼지"]
+  const colors = ["푸른", "푸른", "붉은", "붉은", "노란", "노란", "흰", "흰", "검은", "검은"]
+
+  const cheonganIndex = (year - 4) % 10
+  const jijiIndex = (year - 4) % 12
+
+  return {
+    ganji: cheongan[cheonganIndex] + jiji[jijiIndex],
+    animal: jijiAnimals[jijiIndex],
+    color: colors[cheonganIndex],
+    fullName: `${ganji}년 ${color} ${animal}의 해`
+  }
+}
+// 2026년 → 병오년 붉은 말의 해
+```
+
+#### 환경변수
+```bash
+# Resend API (이메일 전송용)
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+RESEND_FROM_EMAIL=신년운세 <fortune@yourdomain.com>
+```
+
+#### 커밋 정보
+- 변경 파일: 6개
+- 추가된 코드: ~900줄
+- 신규 패키지: 2개
+
+---
+
 ## 2025-12-26
 
 ### 캘린더 기능 추가 및 Supabase 연동

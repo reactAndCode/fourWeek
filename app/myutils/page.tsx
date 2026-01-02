@@ -10,9 +10,10 @@ import { Guestbook } from "@/components/myutils/guestbook"
 import { DataTransform } from "@/components/myutils/data-transform"
 import { TripPlanner } from "@/components/myutils/trip-planner"
 import { CalendarView } from "@/components/myutils/calendar"
+import { Fortune } from "@/components/myutils/fortune"
 import { useAuth } from "@/hooks/useAuth"
 
-type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "dataTransform" | "tripPlanner" | "calendar" | "testA" | "testB" | "testC"
+type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "dataTransform" | "tripPlanner" | "calendar" | "fortune" | "testA" | "testB" | "testC"
 
 export default function MyUtilsPage() {
   const router = useRouter()
@@ -54,6 +55,7 @@ export default function MyUtilsPage() {
             {activeMenu === "dataTransform" && <DataTransform />}
             {activeMenu === "tripPlanner" && <TripPlanner />}
             {activeMenu === "calendar" && <CalendarView />}
+            {activeMenu === "fortune" && <Fortune />}
             {activeMenu === "testA" && (
               <div className="text-center text-gray-500 py-20">
                 테스트 A 컨텐츠 영역
