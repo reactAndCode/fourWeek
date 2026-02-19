@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Resend API Key 및 발신자 이메일 확인
+    // Resend API Key 및 발신자 이메일 확인 1111
     if (!process.env.RESEND_API_KEY) {
       console.error("RESEND_API_KEY가 설정되지 않았습니다.")
       return NextResponse.json(
