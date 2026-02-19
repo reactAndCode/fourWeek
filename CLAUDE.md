@@ -208,6 +208,41 @@ create policy "Users can insert their own memos"
 create policy "Users can update their own memos"
   on memos for update
   using (auth.uid() = user_id);
+
+-- Visit reviews table
+create table visit_reviews (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  place_name text not null,
+  address text,
+  lat double precision,
+  lng double precision,
+  rating integer check (rating >= 1 and rating <= 5) default 5,
+  content text,
+  visited_date date default current_date,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS for visit_reviews
+alter table visit_reviews enable row level security;
+
+-- RLS policies for visit_reviews
+create policy "Users can view their own visit reviews"
+  on visit_reviews for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own visit reviews"
+  on visit_reviews for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own visit reviews"
+  on visit_reviews for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete their own visit reviews"
+  on visit_reviews for delete
+  using (auth.uid() = user_id);
 ```
 
 ## Next Steps (TODO)

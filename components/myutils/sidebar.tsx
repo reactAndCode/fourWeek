@@ -3,7 +3,7 @@
 import { Languages, FlaskConical, Network, FileText, Database, MapPin, Calendar, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "dataTransform" | "tripPlanner" | "calendar" | "fortune" | "testA" | "testB" | "testC"
+type MenuItem = "translator" | "reatFlow" | "doument" | "guestBook" | "dataTransform" | "tripPlanner" | "calendar" | "fortune" | "visitReview" | "testA" | "testB" | "testC"
 
 interface SidebarProps {
   activeMenu: MenuItem
@@ -50,6 +50,11 @@ const menuItems = [
     id: "fortune" as MenuItem,
     label: "신년운세",
     icon: Sparkles,
+  },
+  {
+    id: "visitReview" as MenuItem,
+    label: "내방문리뷰",
+    icon: MapPin,
   },
   {
     id: "testA" as MenuItem,

@@ -105,6 +105,47 @@ export interface Database {
           updated_at?: string
         }
       }
+      visit_reviews: {
+        Row: {
+          id: string
+          user_id: string
+          place_name: string
+          address: string | null
+          lat: number | null
+          lng: number | null
+          rating: number
+          content: string | null
+          visited_date: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          place_name: string
+          address?: string | null
+          lat?: number | null
+          lng?: number | null
+          rating?: number
+          content?: string | null
+          visited_date?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          place_name?: string
+          address?: string | null
+          lat?: number | null
+          lng?: number | null
+          rating?: number
+          content?: string | null
+          visited_date?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
