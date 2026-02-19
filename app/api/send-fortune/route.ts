@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// lazy initialization inside handler
 
 interface FortuneResult {
   year: string
@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
     if (!process.env.RESEND_FROM_EMAIL) {
       console.warn("RESEND_FROM_EMAIL이 설정되지 않아 기본값을 사용합니다. 도메인을 인증하면 누구에게나 이메일을 보낼 수 있습니다.")
     }
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
 
     const fortuneData = fortune as FortuneResult
 
